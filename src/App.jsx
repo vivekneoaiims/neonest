@@ -1145,7 +1145,10 @@ function AboutPage({ T }) {
     </div>
 
     <div style={card}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>About the Developer</div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
+        <img src="/dev_photo.jpeg" alt="Dr. Vivek Kumar" style={{ width: 90, height: 90, borderRadius: "50%", objectFit: "cover", border: "3px solid " + T.accent + "33", marginBottom: 10 }} />
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText }}>About the Developer</div>
+      </div>
       <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 10px" }}>Dr. Vivek Kumar is a neonatologist and currently an Assistant Professor at Lady Hardinge Medical College (LHMC), New Delhi. He completed his medical training (MBBS, MD, and DM) at AIIMS, New Delhi.</p>
       <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoNEST is a personal, independent project born from his interest in the application of digital technology and Artificial Intelligence to enhance neonatal care.</p>
     </div>
