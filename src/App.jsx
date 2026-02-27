@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 
-// ━━━ Supabase Config ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const SUPABASE_URL = "https://hilnfjnvrkjllhnuasku.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbG5mam52cmtqbGxobnVhc2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODA2ODQsImV4cCI6MjA4Nzc1NjY4NH0.UBtLttpTD_YdU34VIFdjZgBW9hgHTWDbmSx82UKoNFU";
+// ━━━ Supabase Proxy Config ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// All Supabase calls go through /api/profile (Vercel serverless function)
+// This bypasses India ISP blocks and keeps the Supabase key server-side
 
 function getDeviceId() {
   const KEY = "neonest_device_id";
@@ -16,27 +16,20 @@ function getDeviceId() {
 async function supabaseUpsertProfile(profile) {
   try {
     const deviceId = getDeviceId();
-    const body = { name: profile.name, email: profile.email, mobile: profile.mobile || "", sex: profile.sex || "", designation: profile.designation || "", unit: profile.unit || "", hospital: profile.hospital, city: profile.city, country: profile.country || "", device_id: deviceId, updated_at: new Date().toISOString() };
-    // Check if profile exists for this device
-    const check = await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId + "&select=id", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } });
-    const existing = await check.json();
-    if (existing && existing.length > 0) {
-      // Update
-      await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId, { method: "PATCH", headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(body) });
-    } else {
-      // Insert
-      await fetch(SUPABASE_URL + "/rest/v1/profiles", { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(body) });
-    }
-  } catch (e) { console.warn("Supabase sync failed:", e); }
+    const body = { name: profile.name, email: profile.email, mobile: profile.mobile || "", sex: profile.sex || "", designation: profile.designation || "", unit: profile.unit || "", hospital: profile.hospital, city: profile.city, country: profile.country || "", device_id: deviceId };
+    const res = await fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) console.warn("Profile sync failed:", res.status);
+  } catch (e) { console.warn("Profile sync failed:", e); }
 }
 
 async function supabaseLoadProfile() {
   try {
     const deviceId = getDeviceId();
-    const res = await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId + "&select=name,email,mobile,sex,designation,unit,hospital,city,country&limit=1", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } });
+    const res = await fetch("/api/profile?device_id=" + deviceId);
+    if (!res.ok) return null;
     const rows = await res.json();
     if (rows && rows.length > 0) return rows[0];
-  } catch (e) { console.warn("Supabase load failed:", e); }
+  } catch (e) { console.warn("Profile load failed:", e); }
   return null;
 }
 
@@ -1364,15 +1357,15 @@ export default function App() {
   const [onboarded, setOnboarded] = useState(false);
   const [supaChecked, setSupaChecked] = useState(false);
 
-  // Try loading profile from Supabase if not found locally
+  // Try loading profile from Supabase if not found locally (non-blocking with timeout)
   useEffect(() => {
     if (!profLoaded || supaChecked) return;
     const profileOk = profile && profile.name && profile.email && profile.email.includes("@") && profile.hospital && profile.city;
     if (!profileOk) {
-      supabaseLoadProfile().then(sp => {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject("timeout"), 4000));
+      Promise.race([supabaseLoadProfile(), timeout]).then(sp => {
         if (sp && sp.name && sp.email) saveProfile(sp);
-        setSupaChecked(true);
-      });
+      }).catch(() => {}).finally(() => setSupaChecked(true));
     } else { setSupaChecked(true); }
   }, [profLoaded, profile, supaChecked, saveProfile]);
   const T = TH[theme];
