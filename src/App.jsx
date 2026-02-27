@@ -435,8 +435,8 @@ function HMenu({ open, onClose, onNav, T }) {
     <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 280, background: T.card, zIndex: 201, boxShadow: "4px 0 24px rgba(0,0,0,.15)", animation: "slideIn .25s ease", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid " + T.border, textAlign: "center" }}><Logo T={T} width={180} /></div>
       <div style={{ flex: 1, padding: "8px 0" }}>
-        {[["profile", "\ud83d\udc64", "Profile"], ["settings", "\u2699\ufe0f", "Settings"], ["contact", "\ud83d\udce7", "Contact Us"], ["about", "\u2139\ufe0f", "About & Privacy"]].map(([id, ic, lb]) => (
-          <button key={id} onClick={() => { onNav(id); onClose() }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: "transparent", border: "none", cursor: "pointer", fontSize: 14, color: T.t1, fontWeight: 500, textAlign: "left" }}><span style={{ fontSize: 18 }}>{ic}</span>{lb}</button>
+        {[["profile", "\ud83d\udc64", "Profile"], ["settings", "\u2699\ufe0f", "Settings"], ["contact", "\ud83d\udce7", "Contact Us"], ["about", "\u2139\ufe0f", "About"], ["privacy", "\ud83d\udd12", "Privacy & Disclaimer"], ["faq", "\u2753", "FAQs"]].map(([id, ic, lb]) => (
+          <button key={id} onClick={() => { onNav(id); onClose() }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "15px 20px", background: "transparent", border: "none", cursor: "pointer", fontSize: 16, color: T.t1, fontWeight: 600, textAlign: "left" }}><span style={{ fontSize: 22 }}>{ic}</span>{lb}</button>
         ))}
       </div>
       <div style={{ padding: "12px 20px", borderTop: "1px solid " + T.border, fontSize: 10, color: T.t3 }}>NeoNEST v1.0</div>
@@ -1127,46 +1127,105 @@ function ProfilePage({ T }) {
   </div>;
 }
 function AboutPage({ T }) {
-  const card = { background: T.card, borderRadius: 12, padding: "16px 16px", border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 };
+  const card = { background: T.card, borderRadius: 12, padding: "18px 18px", border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 };
   return <div>
-    <div style={{ ...card, display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 16px 16px" }}>
-      <Logo T={T} width={220} />
-      <div style={{ fontSize: 11, color: T.t3, marginTop: 6 }}>v1.0</div>
+    <div style={{ ...card, display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 18px 18px" }}>
+      <Logo T={T} width={240} />
+      <div style={{ fontSize: 13, color: T.t3, marginTop: 8 }}>v1.0</div>
     </div>
 
     <div style={card}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>About NeoNEST</div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 12px" }}>NeoNEST (Neonatal Essential Support Tools) is a clinician-designed digital platform developed to support evidence-based neonatal nutrition and bedside decision-making in NICU settings.</p>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 8px" }}>Version 1.0 currently includes:</p>
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        {["30 sec TPN", "GIR Calculator", "Nutrition Audit"].map((t, i) => <div key={i} style={{ flex: 1, padding: "8px 6px", background: T.accentDim, borderRadius: 8, border: "1px solid " + T.accent + "18", textAlign: "center", fontSize: 10, fontWeight: 600, color: T.accentText }}>{t}</div>)}
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.accentText, marginBottom: 10 }}>About NeoNEST</div>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: "0 0 12px" }}>NeoNEST (Neonatal Essential Support Tools) is a clinician-designed digital platform developed to support evidence-based neonatal nutrition and bedside decision-making in NICU settings.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: "0 0 8px" }}>Version 1.0 currently includes:</p>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {["30 sec TPN", "GIR Calculator", "Nutrition Audit"].map((t, i) => <div key={i} style={{ flex: 1, padding: "10px 6px", background: T.accentDim, borderRadius: 8, border: "1px solid " + T.accent + "18", textAlign: "center", fontSize: 12, fontWeight: 600, color: T.accentText }}>{t}</div>)}
       </div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoNEST is designed to reduce calculation errors, save bedside time, and promote structured documentation in neonatal units.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoNEST is designed to reduce calculation errors, save bedside time, and promote structured documentation in neonatal units.</p>
     </div>
 
     <div style={card}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
-        <img src="/dev_photo.jpeg" alt="Dr. Vivek Kumar" style={{ width: 90, height: 90, borderRadius: "50%", objectFit: "cover", border: "3px solid " + T.accent + "33", marginBottom: 10 }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText }}>About the Developer</div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
+        <img src="/dev_photo.jpeg" alt="Dr. Vivek Kumar" style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover", border: "3px solid " + T.accent + "33", marginBottom: 12 }} />
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.accentText }}>About the Developer</div>
       </div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 10px" }}>Dr. Vivek Kumar is a neonatologist and currently an Assistant Professor at Lady Hardinge Medical College (LHMC), New Delhi. He completed his medical training (MBBS, MD, and DM) at AIIMS, New Delhi.</p>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoNEST is a personal, independent project born from his interest in the application of digital technology and Artificial Intelligence to enhance neonatal care.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: "0 0 10px" }}>Dr. Vivek Kumar is a neonatologist and currently an Assistant Professor at Lady Hardinge Medical College (LHMC), New Delhi. He completed his medical training (MBBS, MD, and DM) at AIIMS, New Delhi.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoNEST is a personal, independent project born from his interest in the application of digital technology and Artificial Intelligence to enhance neonatal care.</p>
     </div>
 
-    <div style={{ ...card, background: T.accentDim, border: "1px solid " + T.accent + "25", padding: "16px 18px" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: T.accentText, marginBottom: 8, letterSpacing: ".03em", textTransform: "uppercase" }}>A note from the developer</div>
-      <p style={{ fontSize: 11.5, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>"In neonatal care, small numbers carry great weight. A minor miscalculation can affect a life measured in grams. NeoNEST was first conceptualized during my DM training at AIIMS, New Delhi, where I developed Excel-based calculators that continue to be used in clinical practice at AIIMS and other centers.</p>
-      <p style={{ fontSize: 11.5, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>Over time, it became clear that thoughtfully designed digital tools could further enhance safety, efficiency, and standardization in the NICU. NeoNEST represents the evolution of that early work into a clinician-friendly application, developed with the assistance of modern digital technologies.</p>
-      <p style={{ fontSize: 11.5, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>It is my hope that this platform supports colleagues in delivering precise, efficient, and compassionate care to the smallest patients we serve."</p>
-      <p style={{ fontSize: 12, color: T.accentText, fontWeight: 700, margin: 0, textAlign: "right" }}>— Dr. Vivek Kumar</p>
+    <div style={{ ...card, background: T.accentDim, border: "1px solid " + T.accent + "25", padding: "18px 20px" }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8, letterSpacing: ".03em", textTransform: "uppercase" }}>A note from the developer</div>
+      <p style={{ fontSize: 13, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>"In neonatal care, small numbers carry great weight. A minor miscalculation can affect a life measured in grams. NeoNEST was first conceptualized during my DM training at AIIMS, New Delhi, where I developed Excel-based calculators that continue to be used in clinical practice at AIIMS and other centers.</p>
+      <p style={{ fontSize: 13, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>Over time, it became clear that thoughtfully designed digital tools could further enhance safety, efficiency, and standardization in the NICU. NeoNEST represents the evolution of that early work into a clinician-friendly application, developed with the assistance of modern digital technologies.</p>
+      <p style={{ fontSize: 13, color: T.t2, lineHeight: 1.9, margin: "0 0 8px", fontStyle: "italic" }}>It is my hope that this platform supports colleagues in delivering precise, efficient, and compassionate care to the smallest patients we serve."</p>
+      <p style={{ fontSize: 14, color: T.accentText, fontWeight: 700, margin: 0, textAlign: "right" }}>— Dr. Vivek Kumar</p>
+    </div>
+  </div>;
+}
+function PrivacyPage({ T }) {
+  const card = { background: T.card, borderRadius: 12, padding: "18px 18px", border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 };
+  return <div>
+    <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, padding: "20px 18px" }}>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: T.btnGrad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{"\ud83d\udd12"}</div>
+      <div><div style={{ fontSize: 17, fontWeight: 700, color: T.t1 }}>Privacy & Disclaimer</div><div style={{ fontSize: 13, color: T.t3, marginTop: 2 }}>How your data is handled</div></div>
     </div>
 
     <div style={card}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>Privacy Policy</div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 12px" }}>All clinical data — including TPN calculations, nutrition audits, and patient-related entries — is processed and stored locally on your device only. No patient-identifiable health data is collected or transmitted to any external server. No analytics, tracking cookies, or advertising services are used.</p>
-      <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>Disclaimer</div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>This application is intended as a calculation aid only. All outputs must be independently verified by the treating physician before clinical use. The developers assume no liability for any clinical decisions, actions, or outcomes based on information provided by this application.</p>
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.accentText, marginBottom: 10 }}>Privacy Policy</div>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 14px" }}>All clinical data — including TPN calculations, nutrition audits, and patient-related entries — is processed and stored locally on your device only. No patient-identifiable health data is collected or transmitted to any external server.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 14px" }}>No analytics, tracking cookies, or advertising services are used.</p>
+
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.accentText, marginBottom: 10, marginTop: 18, paddingTop: 14, borderTop: "1px solid " + T.border }}>Data We Collect</div>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 10px" }}>When you set up your profile, basic information (name, email, hospital, city) is stored both locally and synced to our server to enable cross-device access. This data is used solely for app functionality and is never shared with third parties.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 10px" }}>Feedback submissions (via the Contact Us form) are sent to our server to help improve the application.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 0" }}>No patient data, TPN calculations, or nutrition audit data ever leaves your device.</p>
     </div>
+
+    <div style={{ ...card, border: "1px solid " + T.red + "22", background: T.card }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.red, marginBottom: 10 }}>Disclaimer</div>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 12px" }}>This application is intended as a calculation aid only. All outputs must be independently verified by the treating physician before clinical use.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: "0 0 12px" }}>The developers assume no liability for any clinical decisions, actions, or outcomes based on information provided by this application.</p>
+      <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.85, margin: 0 }}>NeoNEST does not replace clinical judgment, institutional protocols, or established medical guidelines. It is meant to assist — not to direct — neonatal nutritional management.</p>
+    </div>
+  </div>;
+}
+function FAQPage({ T }) {
+  const [openIdx, setOpenIdx] = useState(null);
+  const toggle = i => setOpenIdx(openIdx === i ? null : i);
+  const card = { background: T.card, borderRadius: 12, padding: "18px 18px", border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 };
+  const faqs = [
+    { q: "What is NeoNEST?", a: "NeoNEST (Neonatal Essential Support Tools) is a clinician-designed app for NICU teams that helps with TPN calculations, GIR/dextrose calculations, and structured nutrition audits. It was developed by Dr. Vivek Kumar (Assistant Professor, LHMC, New Delhi) to reduce bedside calculation errors and save time." },
+    { q: "Is NeoNEST free to use?", a: "Yes. NeoNEST is completely free for all healthcare professionals. There are no subscriptions, ads, or in-app purchases." },
+    { q: "Is my patient data safe?", a: "All clinical data — TPN calculations, nutrition audits, and baby-related entries — stays entirely on your device. No patient data is transmitted to any server. Only your profile info (name, email, hospital) is synced for cross-device access. See the Privacy & Disclaimer page for full details." },
+    { q: "What are 'Default Settings' and how do they work?", a: "Default Settings (accessible via the Settings page in the hamburger menu) let you pre-fill values that auto-populate every new TPN calculation. This saves time because you don't have to re-enter your unit's standard protocols each time.\n\nFactory defaults include: Weight 1000g, TFR 100 mL/kg/d, Feeds 0 (NPO), Amino acids 3 g/kg/d, Lipids 3 g/kg/d, GIR 6 mg/kg/min, Na 3 mEq/kg/d, K 2 mEq/kg/d, AA source Aminoven, Na source 3% NaCl, MVI 1 mL/kg/d, Celcel 0, Overfill 1x.\n\nYou can customize these to match your NICU's preferred starting values, and hit 'Factory Reset' anytime to restore the original defaults." },
+    { q: "What does the 'Overfill' setting mean?", a: "Overfill controls how syringe volumes are displayed:\n• Overfill = 1: Volumes are shown as 'Per 50 mL' (for making in a standard 50 mL syringe).\n• Overfill > 1 (e.g. 1.1 or 1.2): Full-day volumes are calculated with 10–20% extra to account for syringe priming and line dead-space. The output then shows both the base volume and the adjusted volume." },
+    { q: "What is the difference between 2-syringe and 3-syringe TPN?", a: "In 2-syringe mode:\n• Syringe 1 = Lipid + MVI + Celcel\n• Syringe 2 = Amino acids + Electrolytes + Dextrose\n\nIn 3-syringe mode:\n• Syringe 1 = Lipid + MVI + Celcel\n• Syringe 2 = Amino acids + Electrolytes only\n• Syringe 3 = Dextrose only\n\n3-syringe mode is useful when you want to titrate dextrose separately (e.g. for glucose instability)." },
+    { q: "What is the difference between Aminoven and Pentamin?", a: "Both are 10% amino acid solutions used for neonatal TPN.\n• Aminoven: Pure amino acids with no added electrolytes.\n• Pentamin: Contains 8.7 mEq Na and 1.5 mEq K per 100 mL.\n\nThe calculator automatically adjusts Na and K volumes when Pentamin is selected, so you get the correct final electrolyte delivery." },
+    { q: "What does '3% NaCl' vs 'Conc. RL (CRL)' mean?", a: "These are two sodium sources for TPN:\n• 3% NaCl: Standard hypertonic saline (0.51 mEq Na/mL).\n• Conc. RL (Concentrated Ringer Lactate): Alternative preparation (~1.5 mEq Na/mL), resulting in smaller volumes.\n\nChoose whichever is available at your institution. The calculator adjusts volumes accordingly." },
+    { q: "Can I use NeoNEST offline?", a: "Yes. Once the app is loaded in your browser, all calculators work fully offline. TPN calculations, GIR calculations, and nutrition audits do not require an internet connection. An internet connection is only needed the very first time you open the app and during profile setup." },
+    { q: "What is the GIR Calculator used for?", a: "The GIR (Glucose Infusion Rate) Calculator helps you determine the dextrose concentration needed to achieve a target GIR based on available fluid volume, or conversely, what GIR a given dextrose setup will deliver. It's useful for quick bedside glucose management decisions independent of full TPN planning." },
+    { q: "What is the Nutrition Audit tool?", a: "The Nutrition Audit tool lets you track and document actual nutritional intake (calories, protein, fluids) a baby received over a day. It helps identify gaps between prescribed and delivered nutrition, supporting quality improvement and structured documentation." },
+    { q: "How do HMF/PTF settings work?", a: "In Settings, you configure the calories and protein per gram of your Human Milk Fortifier (HMF) or Protein-Targeted Fortifier (PTF).\n• If protein per gram ≥ 0.2 g/g → labeled as HMF\n• If protein per gram < 0.2 g/g → labeled as PTF\n\nStrength options (Quarter / Half / Full) correspond to 1g per 100 mL, 1g per 50 mL, and 1g per 25 mL of feeds respectively. The app automatically calculates additional calories and protein from fortification." },
+    { q: "What do the EBM and Formula calorie/protein defaults mean?", a: "These are the assumed nutritional values per 100 mL of enteral feeds:\n• EBM (Expressed Breast Milk): Default 67 kcal and 1.1 g protein per 100 mL.\n• Formula: Default 78 kcal and 1.9 g protein per 100 mL.\n\nYou can adjust these in Settings to match the specific products used at your center." },
+    { q: "Can multiple people use NeoNEST on the same device?", a: "NeoNEST currently supports a single profile per device/browser. If multiple users share a device, they will share the same profile and default settings. Each user should ideally use their own device or browser for accurate profile tracking." },
+    { q: "How do I report a bug or suggest a feature?", a: "Use the Contact Us page (accessible from the hamburger menu). Select the feedback type (Bug Report, Feature Request, etc.), describe the issue, and submit. Your feedback is saved locally and also sent to the developer. You can also reach out directly via email at vivekneoaiims@gmail.com." },
+  ];
+  return <div>
+    <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, padding: "20px 18px" }}>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: T.btnGrad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{"\u2753"}</div>
+      <div><div style={{ fontSize: 17, fontWeight: 700, color: T.t1 }}>Frequently Asked Questions</div><div style={{ fontSize: 13, color: T.t3, marginTop: 2 }}>{faqs.length} questions answered</div></div>
+    </div>
+
+    {faqs.map((f, i) => {
+      const isOpen = openIdx === i;
+      return <div key={i} style={{ background: T.card, borderRadius: 12, border: "1px solid " + (isOpen ? T.accent + "44" : T.border), boxShadow: T.shadow, marginBottom: 6, transition: "border-color .2s" }}>
+        <button onClick={() => toggle(i)} style={{ width: "100%", display: "flex", alignItems: "center", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", gap: 10 }}>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: isOpen ? T.accentText : T.t1, lineHeight: 1.5, transition: "color .2s" }}>{f.q}</span>
+          <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform .25s ease", color: isOpen ? T.accentText : T.t3 }}><path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        {isOpen && <div style={{ padding: "0 16px 16px", fontSize: 13, color: T.t2, lineHeight: 1.85, whiteSpace: "pre-line", borderTop: "1px solid " + T.border + "66", marginLeft: 16, marginRight: 16, paddingTop: 12 }}>{f.a}</div>}
+      </div>;
+    })}
   </div>;
 }
 function ContactPage({ T }) {
@@ -1389,7 +1448,7 @@ export default function App() {
   }, [profLoaded, profile, supaChecked, saveProfile]);
   const T = TH[theme];
   const activePage = menuPage || tab;
-  const titles = { tpn: "30 sec TPN Calculator", gir: "GIR Dextrose Calculator", nutrition: "Nutrition Audit", profile: "Profile", settings: "Settings", contact: "Contact Us", about: "About & Privacy" };
+  const titles = { tpn: "30 sec TPN Calculator", gir: "GIR Dextrose Calculator", nutrition: "Nutrition Audit", profile: "Profile", settings: "Settings", contact: "Contact Us", about: "About", privacy: "Privacy & Disclaimer", faq: "FAQs" };
   if (!loaded || !profLoaded || !nutLoaded || !supaChecked) return <div style={{ minHeight: "100vh", background: TH.classic.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", color: TH.classic.t3 }}>Loading...</div>;
 
   const profileOk = profile && profile.name && profile.email && profile.email.includes("@") && profile.hospital && profile.city;
@@ -1412,10 +1471,12 @@ export default function App() {
       {activePage === "settings" && <SettingsPage T={T} defaults={defaults} saveDefaults={saveDefaults} />}
       {activePage === "profile" && <ProfilePage T={T} />}
       {activePage === "about" && <AboutPage T={T} />}
+      {activePage === "privacy" && <PrivacyPage T={T} />}
+      {activePage === "faq" && <FAQPage T={T} />}
       {activePage === "contact" && <ContactPage T={T} />}
     </div>
     <div className="no-print" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: T.navBg, borderTop: "1px solid " + T.navBorder, display: "flex", zIndex: 100, boxShadow: "0 -2px 12px rgba(0,0,0,.08)" }}>
-      {[["tpn", ICO_TPN, "30 sec TPN"], ["gir", ICO_GIR, "GIR"], ["nutrition", ICO_NUT, "Nutrition Audit"]].map(([id, ico, lb]) => { const on = tab === id && !menuPage; return <button key={id} onClick={() => { setTab(id); setMenuPage(null) }} style={{ flex: 1, padding: "6px 0 5px", background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, opacity: on ? 1 : .45 }}><img src={ico} alt={lb} style={{ width: 28, height: 28, objectFit: "contain" }} /><span style={{ fontSize: 7, fontWeight: on ? 700 : 500, color: on ? T.accentText : T.t3 }}>{lb}</span>{on && <div style={{ width: 20, height: 2, borderRadius: 1, background: T.accent, marginTop: 1 }} />}</button> })}
+      {[["tpn", ICO_TPN, "30 sec TPN"], ["gir", ICO_GIR, "GIR"], ["nutrition", ICO_NUT, "Nutrition Audit"]].map(([id, ico, lb]) => { const on = tab === id && !menuPage; return <button key={id} onClick={() => { setTab(id); setMenuPage(null) }} style={{ flex: 1, padding: "6px 0 5px", background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, opacity: on ? 1 : .45 }}><img src={ico} alt={lb} style={{ width: 28, height: 28, objectFit: "contain" }} /><span style={{ fontSize: 10, fontWeight: on ? 700 : 500, color: on ? T.accentText : T.t3 }}>{lb}</span>{on && <div style={{ width: 20, height: 2, borderRadius: 1, background: T.accent, marginTop: 1 }} />}</button> })}
     </div>
     <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}input[type=date]{-webkit-appearance:none}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}@media print{.no-print{display:none!important}body{background:#fff!important}.syr-card{break-inside:avoid}}`}</style>
   </div>;
