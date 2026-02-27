@@ -248,7 +248,7 @@ function NI({ label, unit, value, onChange, step = .1, min = 0, max, T, info, oi
     <div style={{ display: "flex", alignItems: "center", background: T.inp, borderRadius: 8, border: "1.5px solid " + T.inpBorder, height: 38, overflow: "hidden" }}>
       <input type="number" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} step={step} min={min} max={max}
         style={{ width: 0, flex: "1 1 auto", padding: "0 4px 0 6px", fontSize: 15, fontWeight: 700, background: "transparent", border: "none", color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", minWidth: 0 }}
-        onFocus={e => e.currentTarget.parentElement.style.borderColor = T.inpFocus} onBlur={e => e.currentTarget.parentElement.style.borderColor = T.inpBorder} />
+        onFocus={e => { e.currentTarget.parentElement.style.borderColor = T.inpFocus; e.currentTarget.select(); }} onBlur={e => e.currentTarget.parentElement.style.borderColor = T.inpBorder} />
       <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid " + T.inpBorder, height: "100%", flexShrink: 0, width: 24 }}>
         <button onClick={inc} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, borderBottom: ".5px solid " + T.inpBorder, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
         <button onClick={dec} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
@@ -282,6 +282,25 @@ function Tog({ label, value, onChange, T, info, oi, soi }) {
     <div style={{ height: 38, display: "flex", alignItems: "center", background: T.inp, borderRadius: 8, padding: "0 10px", border: "1.5px solid " + T.inpBorder }}>
       <button onClick={() => onChange(!value)} style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", background: value ? T.accent : T.inpBorder, position: "relative", transition: "background .2s", flexShrink: 0 }}><div style={{ width: 16, height: 16, borderRadius: 8, background: value ? "#fff" : T.t3, position: "absolute", top: 2, left: value ? 20 : 2, transition: "all .2s" }} /></button>
       <span style={{ fontSize: 11, color: value ? T.accentText : T.t3, marginLeft: 8, fontWeight: 600 }}>{value ? "Yes" : "No"}</span>
+    </div>
+  </div>;
+}
+function CaPConc({ caVal, onCaChange, pVal, onPChange, T }) {
+  const inc = () => { const nc = +(caVal + 1).toFixed(4); onCaChange(nc); onPChange(+(nc / 2).toFixed(4)); };
+  const dec = () => { const nc = Math.max(+(caVal - 1).toFixed(4), 0); onCaChange(nc); onPChange(+(nc / 2).toFixed(4)); };
+  return <div style={{ flex: "1 1 0", minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "baseline", marginBottom: 3, minHeight: 15, gap: 3 }}>
+      <label style={{ fontSize: 10, color: T.t3, fontWeight: 600, letterSpacing: ".03em", whiteSpace: "nowrap" }}>Ca/P conc.</label>
+      <span style={{ fontSize: 8.5, color: T.t3, fontWeight: 400, opacity: 0.75, whiteSpace: "nowrap", flexShrink: 0 }}>(mg/mL)</span>
+    </div>
+    <div style={{ display: "flex", alignItems: "center", background: T.inp, borderRadius: 8, border: "1.5px solid " + T.inpBorder, height: 38, overflow: "hidden" }}>
+      <div style={{ flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: T.t1, gap: 2, minWidth: 0 }}>
+        <span>{caVal}</span><span style={{ color: T.t3, fontWeight: 400 }}>/</span><span>{pVal}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid " + T.inpBorder, height: "100%", flexShrink: 0, width: 24 }}>
+        <button onClick={inc} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, borderBottom: ".5px solid " + T.inpBorder, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
+        <button onClick={dec} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
+      </div>
     </div>
   </div>;
 }
@@ -685,12 +704,12 @@ function GIRPage({ T }) {
 // ━━━ Other Pages ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ━━━ Nutrient Database ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const NUTRIENTS = [
-  { k: "energy", n: "Energy", u: "kcal/kg", bm: 52, fm: 78, hm: 4, aap: [105, 130], esp: [110, 135] },
-  { k: "protein", n: "Protein", u: "g/kg", bm: 0.95, fm: 1.9, hm: 0.3, aap: [3.5, 4.0], esp: [3.5, 4.0] },
+  { k: "energy", n: "Energy", u: "kcal/kg", bm: 67, fm: 78, hm: 4, aap: [105, 130], esp: [110, 135] },
+  { k: "protein", n: "Protein", u: "g/kg", bm: 1.1, fm: 1.9, hm: 0.3, aap: [3.5, 4.0], esp: [3.5, 4.0] },
   { k: "fat", n: "Fat", u: "g/kg", bm: 3.6, fm: 3.8, hm: 0.1, aap: [5.0, 7.0], esp: [4.8, 6.6] },
   { k: "carb", n: "Carbohydrate", u: "g/kg", bm: 6.7, fm: 8.1, hm: 0.4, aap: [10.0, 14], esp: [11.6, 13.2] },
   { k: "ca", n: "Calcium", u: "mg/kg/d", bm: 26, fm: 95, hm: 15.93, aap: [200, 210], esp: [120, 140], sup: true },
-  { k: "po4", n: "Phosphorus", u: "mg/kg/d", bm: 13, fm: 48, hm: 8.76, aap: [100, 110], esp: [60, 90] },
+  { k: "po4", n: "Phosphorus", u: "mg/kg/d", bm: 13, fm: 48, hm: 8.76, aap: [100, 110], esp: [60, 90], sup: true },
   { k: "fe", n: "Iron", u: "mg/kg/d", bm: 0.12, fm: 1.67, hm: 0.36, aap: [2.0, 3.0], esp: [2.0, 3.0], sup: true },
   { k: "vitd", n: "Vitamin D", u: "IU/d", bm: 2, fm: 160, hm: 28, aap: [400, 400], esp: [800, 1000], perDay: true },
   { k: "na", n: "Sodium", u: "mEq/kg/d", bm: 1.4, fm: 1.03, hm: 0.32, aap: [2.0, 3.0], esp: [3.0, 5.0] },
@@ -727,17 +746,17 @@ function calcNutrition(ip, nutDB) {
   const feedMlKg = totalFeedMl / wt;
   const ebmMl = ip.feedSrc === "Formula" ? 0 : (ip.feedSrc === "Mixed" ? totalFeedMl * ip.ebmPct / 100 : totalFeedMl);
   const fmMl = ip.feedSrc === "EBM" ? 0 : (ip.feedSrc === "Mixed" ? totalFeedMl * (100 - ip.ebmPct) / 100 : totalFeedMl);
-  const hmfG = ip.hmfMode === "feed" ? ip.hmfPerFeed * ip.feedsPerDay : ip.hmfPerDay;
-  const wtGain = ip.wtLast > 0 ? ((ip.wtNow - ip.wtLast) / ip.wtLast) * 1000 / 7 : 0;
+  const hmfG = ip.hmfMode === "feed" ? ip.hmfPerFeed * (ip.hmfFreq || 8) : ip.hmfPerDay;
+  const wtGain = ip.wtLast > 0 ? ((ip.wtNow - ip.wtLast) / ((ip.wtNow + ip.wtLast) / 2)) * 1000 / 7 : 0;
   const rows = db.map(nut => {
     let fromEbm = ebmMl * nut.bm / 100;
     let fromFm = fmMl * nut.fm / 100;
     let fromHmf = hmfG * nut.hm;
     let fromSup = 0;
-    if (nut.k === "ca") fromSup = ip.caMl * ip.caConc;
+    if (nut.k === "ca") fromSup = (ip.caMl * (ip.caConcCa || 0)) + (ip.extraCaMgDay || 0);
     if (nut.k === "fe") fromSup = ip.feMl * ip.feConc;
     if (nut.k === "vitd") fromSup = ip.vitdIU;
-    if (nut.k === "po4") fromSup = ip.po4Ml * ip.po4Conc;
+    if (nut.k === "po4") fromSup = (ip.caMl * (ip.caConcP || 0)) + (ip.extraPMgDay || 0);
     const totalAbs = fromEbm + fromFm + fromHmf + fromSup;
     const perKg = nut.perDay ? totalAbs : totalAbs / wt;
     const rda = nut.esp;
@@ -749,7 +768,7 @@ function calcNutrition(ip, nutDB) {
   const pe = eRow && pRow && eRow.perKg > 0 ? (pRow.perKg / eRow.perKg) * 1000 : 0;
   return { rows, feedMlKg, totalFeedMl, ebmMl, fmMl, hmfG, wtGain, pe, wt };
 }
-function NutDBEditor({ T, nutOv, saveNutOv, onClose }) {
+function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
   const [tab, setTab] = useState("bm");
   const [d, setD] = useState(() => {
     const init = {};
@@ -763,10 +782,16 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose }) {
     });
     return init;
   });
+  const [supDef, setSupDef] = useState(() => ({
+    caConcCa: nutOv?.__supDef?.caConcCa ?? 16,
+    caConcP: nutOv?.__supDef?.caConcP ?? 8,
+    feConc: nutOv?.__supDef?.feConc ?? 10,
+  }));
   const upd = (k, field, val) => setD(p => ({ ...p, [k]: { ...p[k], [field]: val } }));
   const updRda = (k, field, idx, val) => setD(p => { const arr = [...(p[k][field] || [0, 0])]; arr[idx] = val; return { ...p, [k]: { ...p[k], [field]: arr } }; });
-  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: "HMF/PTF", sub: "per gram" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN", sub: "RDA range" }];
+  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: "HMF/PTF", sub: "per gram" }, { id: "sup", l: "Suppl.", sub: "defaults" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN", sub: "RDA range" }];
   const isRda = tab === "aap" || tab === "esp";
+  const isSup = tab === "sup";
   return <div style={{ background: T.card, borderRadius: 12, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
     <div style={{ display: "flex", alignItems: "center", padding: "10px 12px", borderBottom: "1px solid " + T.border }}>
       <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: T.t1 }}>Nutrition Database</div><div style={{ fontSize: 10, color: T.t3 }}>Edit values and save as your defaults</div></div>
@@ -776,6 +801,24 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose }) {
       {tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "6px 8px", fontSize: 9, fontWeight: tab === t.id ? 700 : 500, background: tab === t.id ? T.accentDim : "transparent", color: tab === t.id ? T.accentText : T.t3, border: tab === t.id ? "1px solid " + T.accent + "33" : "1px solid transparent", borderRadius: 6, cursor: "pointer", whiteSpace: "nowrap", textAlign: "center", lineHeight: 1.3 }}><div>{t.l}</div><div style={{ fontSize: 7, fontWeight: 400 }}>{t.sub}</div></button>)}
     </div>
     <div style={{ maxHeight: 320, overflowY: "auto", padding: "4px 8px" }}>
+      {isSup ? <>
+        {/* Supplement concentration defaults */}
+        <div style={{ padding: "8px 4px 4px" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: T.t1, marginBottom: 8 }}>Default supplement concentrations</div>
+          {[
+            { label: "Ca/P syrup — Ca conc.", key: "caConcCa", unit: "mg/mL", step: 1 },
+            { label: "Ca/P syrup — P conc.", key: "caConcP", unit: "mg/mL", step: 1 },
+            { label: "Iron conc.", key: "feConc", unit: "mg/mL", step: 1 },
+          ].map(item => {
+            const inpSt = { width: 80, height: 30, padding: "0 4px", fontSize: 12, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 6, color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", boxSizing: "border-box", textAlign: "center" };
+            return <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 4px", borderBottom: "1px solid " + T.border + "44" }}>
+              <div><div style={{ fontSize: 11, fontWeight: 600, color: T.t1 }}>{item.label}</div><div style={{ fontSize: 8, color: T.t3 }}>{item.unit}</div></div>
+              <input type="number" value={supDef[item.key]} onChange={e => setSupDef(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.select()} step={item.step} style={inpSt} />
+            </div>;
+          })}
+          <div style={{ fontSize: 9, color: T.t3, marginTop: 8, padding: "0 4px" }}>These values will be used as default concentrations when starting a new nutrition audit.</div>
+        </div>
+      </> : <>
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: isRda ? "1fr 64px 64px" : "1fr 80px", gap: 4, padding: "4px 4px 2px", borderBottom: "1px solid " + T.border }}>
         <span style={{ fontSize: 9, fontWeight: 700, color: T.t3 }}>NUTRIENT</span>
@@ -787,23 +830,24 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose }) {
         return <div key={nut.k} style={{ display: "grid", gridTemplateColumns: isRda ? "1fr 64px 64px" : "1fr 80px", gap: 4, padding: "5px 4px", borderBottom: "1px solid " + T.border + "44", alignItems: "center" }}>
           <div><div style={{ fontSize: 11, fontWeight: 600, color: T.t1 }}>{nut.n}</div><div style={{ fontSize: 8, color: T.t3 }}>{nut.u}</div></div>
           {isRda ? <>
-            <input type="number" value={val[tab][0]} onChange={e => updRda(nut.k, tab, 0, parseFloat(e.target.value) || 0)} step={0.1} style={inpSt} />
-            <input type="number" value={val[tab][1]} onChange={e => updRda(nut.k, tab, 1, parseFloat(e.target.value) || 0)} step={0.1} style={inpSt} />
-          </> : <input type="number" value={val[tab]} onChange={e => upd(nut.k, tab, parseFloat(e.target.value) || 0)} step={0.01} style={inpSt} />}
+            <input type="number" value={val[tab][0]} onChange={e => updRda(nut.k, tab, 0, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.1} style={inpSt} />
+            <input type="number" value={val[tab][1]} onChange={e => updRda(nut.k, tab, 1, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.1} style={inpSt} />
+          </> : <input type="number" value={val[tab]} onChange={e => upd(nut.k, tab, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.01} style={inpSt} />}
         </div>;
       })}
+      </>}
     </div>
     <div style={{ display: "flex", gap: 6, padding: "8px 10px", borderTop: "1px solid " + T.border }}>
-      <button onClick={() => { saveNutOv(d); alert("Nutrition database saved!") }} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>Save Defaults</button>
-      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
+      <button onClick={() => { saveNutOv({ ...d, __supDef: supDef }); if (onSupSaved) onSupSaved(supDef); alert("Nutrition database saved!") }} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>Save Defaults</button>
+      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); setSupDef({ caConcCa: 16, caConcP: 8, feConc: 10 }); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
     </div>
   </div>;
 }
 function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const [ip, setIp] = useState({
     babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 8, totalMlKg: 150,
-    feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0,
-    caMl: 0, caConc: 16, feMl: 0, feConc: 10, po4Ml: 0, po4Conc: 30, vitdIU: 400
+    feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0, hmfFreq: 8,
+    caMl: 0, caConcCa: nutOv?.__supDef?.caConcCa ?? 16, caConcP: nutOv?.__supDef?.caConcP ?? 8, feMl: 0, feConc: nutOv?.__supDef?.feConc ?? 10, extraCaMgDay: 0, extraPMgDay: 0, vitdIU: 400
   });
   const [show, setShow] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -849,14 +893,15 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       <Row><Pills label="Feed source" value={ip.feedSrc} options={["EBM", "Formula", "Mixed"]} onChange={s("feedSrc")} T={T} /></Row>
       {ip.feedSrc === "Mixed" && <Row><NI label="EBM %" unit="%" value={ip.ebmPct} onChange={s("ebmPct")} step={5} min={0} max={100} T={T} /></Row>}
       <Row><Pills label={fortLabel + " entry"} value={ip.hmfMode} options={[{ label: "Per Feed", value: "feed" }, { label: "Per Day", value: "day" }]} onChange={s("hmfMode")} T={T} />
-        {ip.hmfMode === "feed" ? <NI label={fortLabel + "/feed"} unit="g" value={ip.hmfPerFeed} onChange={s("hmfPerFeed")} step={0.25} T={T} /> : <NI label={fortLabel + "/day"} unit="g" value={ip.hmfPerDay} onChange={s("hmfPerDay")} step={0.5} T={T} />}
+        {ip.hmfMode === "feed" ? <NI label={fortLabel + "/feed"} unit="g" value={ip.hmfPerFeed} onChange={s("hmfPerFeed")} step={0.1} T={T} /> : <NI label={fortLabel + "/day"} unit="g" value={ip.hmfPerDay} onChange={s("hmfPerDay")} step={0.5} T={T} />}
       </Row>
+      {ip.hmfMode === "feed" && <Row><Pills label="Feed frequency" value={ip.hmfFreq} options={[{ label: "2 hourly (12)", value: 12 }, { label: "3 hourly (8)", value: 8 }]} onChange={s("hmfFreq")} T={T} /></Row>}
     </Sec>
 
     <Sec title="Supplements" open={true} onToggle={() => { }} T={T}>
-      <Row><NI label="Ca syrup" unit="mL/d" value={ip.caMl} onChange={s("caMl")} step={0.5} T={T} /><NI label="Ca conc." unit="mg/mL" value={ip.caConc} onChange={s("caConc")} step={1} T={T} /></Row>
-      <Row><NI label="Iron syrup" unit="mL/d" value={ip.feMl} onChange={s("feMl")} step={0.5} T={T} /><NI label="Fe conc." unit="mg/mL" value={ip.feConc} onChange={s("feConc")} step={1} T={T} /></Row>
-      <Row><NI label="PO4 syrup" unit="mL/d" value={ip.po4Ml} onChange={s("po4Ml")} step={0.5} T={T} /><NI label="PO4 conc." unit="mg/mL" value={ip.po4Conc} onChange={s("po4Conc")} step={1} T={T} /></Row>
+      <Row><NI label="Ca/P syrup" unit="mL/d" value={ip.caMl} onChange={s("caMl")} step={0.1} T={T} /><CaPConc caVal={ip.caConcCa} onCaChange={s("caConcCa")} pVal={ip.caConcP} onPChange={s("caConcP")} T={T} /></Row>
+      <Row><NI label="Iron syrup" unit="mL/d" value={ip.feMl} onChange={s("feMl")} step={0.1} T={T} /><NI label="Iron conc." unit="mg/mL" value={ip.feConc} onChange={s("feConc")} step={1} T={T} /></Row>
+      <Row><NI label="Extra calcium" unit="mg/d" value={ip.extraCaMgDay} onChange={s("extraCaMgDay")} step={5} T={T} /><NI label="Extra phosphate" unit="mg/d" value={ip.extraPMgDay} onChange={s("extraPMgDay")} step={5} T={T} /></Row>
       <Row><NI label="Vitamin D" unit="IU/d" value={ip.vitdIU} onChange={s("vitdIU")} step={100} T={T} /></Row>
     </Sec>
 
@@ -867,7 +912,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       </button>
     </div>
 
-    {editing && <NutDBEditor T={T} nutOv={nutOv} saveNutOv={saveNutOv} onClose={() => setEditing(false)} />}
+    {editing && <NutDBEditor T={T} nutOv={nutOv} saveNutOv={saveNutOv} onClose={() => setEditing(false)} onSupSaved={sd => { if (sd.caConcCa != null) s("caConcCa")(sd.caConcCa); if (sd.caConcP != null) s("caConcP")(sd.caConcP); if (sd.feConc != null) s("feConc")(sd.feConc); }} />}
 
     <button onClick={() => setShow(true)} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", marginBottom: 12, boxShadow: "0 4px 16px " + T.accent + "33" }}>Audit Nutrition</button>
 
@@ -923,7 +968,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       <div style={{ background: T.card, borderRadius: 12, padding: 10, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.t1, marginBottom: 6 }}>Source Breakdown</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 4 }}>
-          {["energy", "protein", "ca", "fe", "vitd"].map(k => {
+          {["energy", "protein", "ca", "po4", "fe", "vitd"].map(k => {
             const r = res.rows.find(x => x.k === k); if (!r) return null;
             const total = r.totalAbs || 1;
             const bars = [{ l: "EBM", v: r.fromEbm, c: T.accent }, { l: "Formula", v: r.fromFm, c: T.green }, { l: fortLabel, v: r.fromHmf, c: T.purple }, { l: "Suppl.", v: r.fromSup, c: T.amber }].filter(b => b.v > 0);
