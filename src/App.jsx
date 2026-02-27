@@ -1,5 +1,45 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 
+// ━━━ Supabase Config ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SUPABASE_URL = "https://hilnfjnvrkjllhnuasku.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbG5mam52cmtqbGxobnVhc2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODA2ODQsImV4cCI6MjA4Nzc1NjY4NH0.UBtLttpTD_YdU34VIFdjZgBW9hgHTWDbmSx82UKoNFU";
+
+function getDeviceId() {
+  const KEY = "neonest_device_id";
+  try {
+    let id = localStorage.getItem(KEY);
+    if (!id) { id = crypto.randomUUID ? crypto.randomUUID() : ("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx").replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16); }); localStorage.setItem(KEY, id); }
+    return id;
+  } catch { return "unknown"; }
+}
+
+async function supabaseUpsertProfile(profile) {
+  try {
+    const deviceId = getDeviceId();
+    const body = { name: profile.name, email: profile.email, mobile: profile.mobile || "", sex: profile.sex || "", designation: profile.designation || "", unit: profile.unit || "", hospital: profile.hospital, city: profile.city, country: profile.country || "", device_id: deviceId, updated_at: new Date().toISOString() };
+    // Check if profile exists for this device
+    const check = await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId + "&select=id", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } });
+    const existing = await check.json();
+    if (existing && existing.length > 0) {
+      // Update
+      await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId, { method: "PATCH", headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(body) });
+    } else {
+      // Insert
+      await fetch(SUPABASE_URL + "/rest/v1/profiles", { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(body) });
+    }
+  } catch (e) { console.warn("Supabase sync failed:", e); }
+}
+
+async function supabaseLoadProfile() {
+  try {
+    const deviceId = getDeviceId();
+    const res = await fetch(SUPABASE_URL + "/rest/v1/profiles?device_id=eq." + deviceId + "&select=name,email,mobile,sex,designation,unit,hospital,city,country&limit=1", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } });
+    const rows = await res.json();
+    if (rows && rows.length > 0) return rows[0];
+  } catch (e) { console.warn("Supabase load failed:", e); }
+  return null;
+}
+
 // ━━━ Calculation Engine ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function calculateTPN(inputs) {
   const {
@@ -367,10 +407,25 @@ function Metric({ label, val, unit, color, warn, T }) {
 
 // ━━━ Storage ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const FACTORY = { weightG: 1000, tfr: 100, feeds: 0, ivm: 0, aminoAcid: 3, lipid: 3, gir: 6, sodium: 3, potassium: 2, calcium: 0, magnesium: 0, po4: 0, ivmN5: 0, ivmN2: 0, ivmNS: 0, ivmDex10: 0, feedType: "NPO", prenanStrength: "None", naSource: "3% NaCl", aaSource: "Aminoven", caViaTPN: true, po4ViaTPN: false, use5Dex: false, use25Dex: false, overfill: 1, celcel: 0, mvi: 1, syringeCount: 2, ebmCal100: 67, formulaCal100: 78, ebmProt100: 1.1, formulaProt100: 1.9, hmfCalPerG: 4, hmfProtPerG: 0.3 };
+// ━━━ Storage helpers (localStorage first, window.storage fallback) ━━━━━━━━━━
+async function storeGet(key) {
+  try { const v = localStorage.getItem(key); if (v) return v; } catch { }
+  try { const r = await window.storage.get(key); if (r?.value) { try { localStorage.setItem(key, r.value) } catch { } return r.value; } } catch { }
+  return null;
+}
+async function storeSet(key, value) {
+  try { localStorage.setItem(key, value) } catch { }
+  try { await window.storage.set(key, value) } catch { }
+}
+
 function useStore(key, fb) {
   const [v, setV] = useState(fb); const [ld, setLd] = useState(false);
-  useEffect(() => { (async () => { try { const r = await window.storage.get(key); if (r?.value) setV(JSON.parse(r.value)) } catch { } setLd(true) })() }, [key]);
-  const save = useCallback(async nv => { setV(nv); try { await window.storage.set(key, JSON.stringify(nv)) } catch { } }, [key]);
+  useEffect(() => { (async () => {
+    const raw = await storeGet(key);
+    if (raw) try { setV(JSON.parse(raw)) } catch { }
+    setLd(true);
+  })() }, [key]);
+  const save = useCallback(async nv => { setV(nv); await storeSet(key, JSON.stringify(nv)); }, [key]);
   return [v, save, ld];
 }
 function todayStr() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") }
@@ -410,7 +465,7 @@ function TPNPage({ T, defaults }) {
   const [nameFocus, setNameFocus] = useState(false); const [idFocus, setIdFocus] = useState(false);
   const [loadedBaby, setLoadedBaby] = useState(null);
 
-  useEffect(() => { (async () => { try { const r = await window.storage.get("baby_history"); if (r?.value) { const all = JSON.parse(r.value); const cutoff = Date.now() - 30 * 86400000; setBabyHist(all.filter(b => new Date(b.ts).getTime() > cutoff)) } } catch { } })() }, []);
+  useEffect(() => { (async () => { try { const raw = await storeGet("baby_history"); if (raw) { const all = JSON.parse(raw); const cutoff = Date.now() - 30 * 86400000; setBabyHist(all.filter(b => new Date(b.ts).getTime() > cutoff)) } } catch { } })() }, []);
 
   const nameSugg = nameFocus && ip.babyOf.length > 0 ? babyHist.filter(b => b.babyOf && b.babyOf.toLowerCase().includes(ip.babyOf.toLowerCase())).reduce((acc, b) => { if (!acc.find(x => x.babyOf === b.babyOf && x.patientId === b.patientId)) acc.push(b); return acc }, []).slice(0, 5) : [];
   const idSugg = idFocus && ip.patientId.length > 0 ? babyHist.filter(b => b.patientId && b.patientId.startsWith(ip.patientId)).reduce((acc, b) => { if (!acc.find(x => x.patientId === b.patientId)) acc.push(b); return acc }, []).slice(0, 5) : [];
@@ -425,7 +480,7 @@ function TPNPage({ T, defaults }) {
   const saveTPN = async () => {
     const entry = { babyOf: ip.babyOf, patientId: ip.patientId, inputs: { ...ip }, results: res, ts: new Date().toISOString() };
     const updated = [entry, ...babyHist.filter(b => !(b.babyOf === ip.babyOf && b.patientId === ip.patientId && b.inputs?.date === ip.date))].slice(0, 200);
-    try { await window.storage.set("baby_history", JSON.stringify(updated)); setBabyHist(updated); alert("Saved!") } catch { alert("Save failed") }
+    try { await storeSet("baby_history", JSON.stringify(updated)); setBabyHist(updated); alert("Saved!") } catch { alert("Save failed") }
   };
 
   const isPerDay = res && !hasErr && res.isPerDay;
@@ -858,14 +913,14 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const fortLabel = (defaults?.hmfProtPerG || 0) < 0.2 ? "PTF" : "HMF";
 
   const [babyNutHist, setBabyNutHist] = useState([]);
-  useEffect(() => { (async () => { try { const r = await window.storage.get("nut_audit_history"); if (r?.value) { const all = JSON.parse(r.value); const cutoff = Date.now() - 30 * 86400000; setBabyNutHist(all.filter(b => new Date(b.ts).getTime() > cutoff)) } } catch { } })() }, []);
+  useEffect(() => { (async () => { try { const raw = await storeGet("nut_audit_history"); if (raw) { const all = JSON.parse(raw); const cutoff = Date.now() - 30 * 86400000; setBabyNutHist(all.filter(b => new Date(b.ts).getTime() > cutoff)) } } catch { } })() }, []);
 
   const saveNutAudit = async () => {
     if (!ip.babyOf || !ip.babyOf.trim()) { alert("Mother's name is required to save."); return; }
     if (!ip.patientId || !ip.patientId.trim()) { alert("Patient ID is required to save."); return; }
     const entry = { babyOf: ip.babyOf, patientId: ip.patientId, inputs: { ...ip }, results: res, ts: new Date().toISOString() };
     const updated = [entry, ...babyNutHist.filter(b => !(b.babyOf === ip.babyOf && b.patientId === ip.patientId && b.inputs?.date === ip.date))].slice(0, 200);
-    try { await window.storage.set("nut_audit_history", JSON.stringify(updated)); setBabyNutHist(updated); alert("Nutrition audit saved!") } catch { alert("Save failed") }
+    try { await storeSet("nut_audit_history", JSON.stringify(updated)); setBabyNutHist(updated); alert("Nutrition audit saved!") } catch { alert("Save failed") }
   };
   const statusColor = (st) => st === "low" ? T.red : st === "high" ? T.blue : T.green;
   const statusBg = (st) => st === "low" ? T.red + "0c" : st === "high" ? T.blueBg : T.green + "08";
@@ -1070,7 +1125,7 @@ function ProfilePage({ T }) {
       </div>
     </div>
 
-    <button onClick={() => { if (!canSave) { alert("Email is required."); return; } saveP(f); alert("Saved!") }} style={{ width: "100%", padding: 12, fontSize: 14, fontWeight: 700, background: canSave ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canSave ? "pointer" : "not-allowed", marginTop: 8 }}>Save Profile</button>
+    <button onClick={() => { if (!canSave) { alert("Email is required."); return; } saveP(f); supabaseUpsertProfile(f); alert("Saved!") }} style={{ width: "100%", padding: 12, fontSize: 14, fontWeight: 700, background: canSave ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canSave ? "pointer" : "not-allowed", marginTop: 8 }}>Save Profile</button>
   </div>;
 }
 function AboutPage({ T }) {
@@ -1107,9 +1162,9 @@ function AboutPage({ T }) {
 
     <div style={card}>
       <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>Privacy Policy</div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 12px" }}>All data processed locally. No patient data transmitted externally. Settings stored in browser local storage only. No analytics, cookies, or third-party services used.</p>
+      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: "0 0 12px" }}>All clinical data — including TPN calculations, nutrition audits, and patient-related entries — is processed and stored locally on your device only. No patient-identifiable health data is collected or transmitted to any external server. No analytics, tracking cookies, or advertising services are used.</p>
       <div style={{ fontSize: 13, fontWeight: 700, color: T.accentText, marginBottom: 8 }}>Disclaimer</div>
-      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>Calculation aid only. All calculations must be verified by the treating physician.</p>
+      <p style={{ fontSize: 12, color: T.t2, lineHeight: 1.8, margin: 0 }}>This application is intended as a calculation aid only. All outputs must be independently verified by the treating physician before clinical use. The developers assume no liability for any clinical decisions, actions, or outcomes based on information provided by this application.</p>
     </div>
   </div>;
 }
@@ -1125,7 +1180,7 @@ function ContactPage({ T }) {
   const [history, setHistory] = useState([]);
   const [showHist, setShowHist] = useState(false);
 
-  useEffect(() => { (async () => { try { const r = await window.storage.get("feedback_history"); if (r?.value) setHistory(JSON.parse(r.value)) } catch { } })() }, []);
+  useEffect(() => { (async () => { try { const raw = await storeGet("feedback_history"); if (raw) setHistory(JSON.parse(raw)) } catch { } })() }, []);
 
   const inp = { width: "100%", height: 38, padding: "0 10px", fontSize: 13, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 8, color: T.t1, outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
   const sel = { ...inp, cursor: "pointer", WebkitAppearance: "none", appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
@@ -1145,7 +1200,7 @@ function ContactPage({ T }) {
       profile: { name: profile.name || "", email: profile.email || "", designation: profile.designation || "", unit: profile.unit || "", hospital: profile.hospital || "", city: profile.city || "", country: profile.country || "" }
     };
     const updated = [entry, ...history].slice(0, 20);
-    try { await window.storage.set("feedback_history", JSON.stringify(updated)) } catch { }
+    try { await storeSet("feedback_history", JSON.stringify(updated)) } catch { }
     setHistory(updated);
     setSent(true);
     setTimeout(() => { setSent(false); setType(""); setSubject(""); setMsg(""); setPriority("Medium") }, 3000);
@@ -1242,7 +1297,8 @@ function Onboarding({ T, onDone }) {
   const canStep2 = f.hospital.trim() && f.city.trim();
 
   const doSave = async () => {
-    try { await window.storage.set("user_profile", JSON.stringify(f)) } catch { }
+    await storeSet("user_profile", JSON.stringify(f));
+    supabaseUpsertProfile(f);
     onDone(f);
   };
 
@@ -1306,10 +1362,23 @@ export default function App() {
   const [nutOv, saveNutOv, nutLoaded] = useStore("nutrition_db", null);
   const [profile, saveProfile, profLoaded] = useStore("user_profile", null);
   const [onboarded, setOnboarded] = useState(false);
+  const [supaChecked, setSupaChecked] = useState(false);
+
+  // Try loading profile from Supabase if not found locally
+  useEffect(() => {
+    if (!profLoaded || supaChecked) return;
+    const profileOk = profile && profile.name && profile.email && profile.email.includes("@") && profile.hospital && profile.city;
+    if (!profileOk) {
+      supabaseLoadProfile().then(sp => {
+        if (sp && sp.name && sp.email) saveProfile(sp);
+        setSupaChecked(true);
+      });
+    } else { setSupaChecked(true); }
+  }, [profLoaded, profile, supaChecked, saveProfile]);
   const T = TH[theme];
   const activePage = menuPage || tab;
   const titles = { tpn: "30 sec TPN Calculator", gir: "GIR Dextrose Calculator", nutrition: "Nutrition Audit", profile: "Profile", settings: "Settings", contact: "Contact Us", about: "About & Privacy" };
-  if (!loaded || !profLoaded || !nutLoaded) return <div style={{ minHeight: "100vh", background: TH.classic.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", color: TH.classic.t3 }}>Loading...</div>;
+  if (!loaded || !profLoaded || !nutLoaded || !supaChecked) return <div style={{ minHeight: "100vh", background: TH.classic.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", color: TH.classic.t3 }}>Loading...</div>;
 
   const profileOk = profile && profile.name && profile.email && profile.email.includes("@") && profile.hospital && profile.city;
   if (!profileOk && !onboarded) return <Onboarding T={T} onDone={p => { saveProfile(p); setOnboarded(true) }} />;
