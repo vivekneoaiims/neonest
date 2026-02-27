@@ -416,11 +416,13 @@ async function storeSet(key, value) {
 
 function useStore(key, fb) {
   const [v, setV] = useState(fb); const [ld, setLd] = useState(false);
-  useEffect(() => { (async () => {
-    const raw = await storeGet(key);
-    if (raw) try { setV(JSON.parse(raw)) } catch { }
-    setLd(true);
-  })() }, [key]);
+  useEffect(() => {
+    (async () => {
+      const raw = await storeGet(key);
+      if (raw) try { setV(JSON.parse(raw)) } catch { }
+      setLd(true);
+    })()
+  }, [key]);
   const save = useCallback(async nv => { setV(nv); await storeSet(key, JSON.stringify(nv)); }, [key]);
   return [v, save, ld];
 }
@@ -797,7 +799,7 @@ function calcNutrition(ip, nutDB) {
   const feedMlKg = totalFeedMl / wt;
   const ebmMl = ip.feedSrc === "Formula" ? 0 : (ip.feedSrc === "Mixed" ? totalFeedMl * ip.ebmPct / 100 : totalFeedMl);
   const fmMl = ip.feedSrc === "EBM" ? 0 : (ip.feedSrc === "Mixed" ? totalFeedMl * (100 - ip.ebmPct) / 100 : totalFeedMl);
-  const hmfG = ip.hmfMode === "feed" ? ip.hmfPerFeed * (ip.hmfFreq || 8) : ip.hmfPerDay;
+  const hmfG = ip.hmfMode === "feed" ? ip.hmfPerFeed * (ip.hmfFreq || 12) : ip.hmfPerDay;
   const wtGain = ip.wtLast > 0 ? ((ip.wtNow - ip.wtLast) / ((ip.wtNow + ip.wtLast) / 2)) * 1000 / 7 : 0;
   const rows = db.map(nut => {
     let fromEbm = ebmMl * nut.bm / 100;
@@ -896,8 +898,8 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
 }
 function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const [ip, setIp] = useState({
-    babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 8, totalMlKg: 150,
-    feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0, hmfFreq: 8,
+    babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 12, totalMlKg: 150,
+    feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0, hmfFreq: 12,
     caMl: 0, caConcCa: nutOv?.__supDef?.caConcCa ?? 16, caConcP: nutOv?.__supDef?.caConcP ?? 8, feMl: 0, feConc: nutOv?.__supDef?.feConc ?? 10, extraCaMgDay: 0, extraPMgDay: 0, vitdIU: 400
   });
   const [show, setShow] = useState(false);
@@ -1201,11 +1203,13 @@ function ContactPage({ T }) {
     setHistory(updated);
     // Send to Supabase via proxy
     try {
-      await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-        type, priority, subject, message: msg,
-        profile_name: profile.name || "", profile_email: profile.email || "", profile_designation: profile.designation || "", profile_hospital: profile.hospital || "", profile_city: profile.city || "",
-        device_id: getDeviceId(), device: entry.device, browser: entry.browser, screen: entry.screen, app_version: "NeoNEST v1.0"
-      }) });
+      await fetch("/api/feedback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+          type, priority, subject, message: msg,
+          profile_name: profile.name || "", profile_email: profile.email || "", profile_designation: profile.designation || "", profile_hospital: profile.hospital || "", profile_city: profile.city || "",
+          device_id: getDeviceId(), device: entry.device, browser: entry.browser, screen: entry.screen, app_version: "NeoNEST v1.0"
+        })
+      });
     } catch (e) { console.warn("Feedback sync failed:", e); }
     setSent(true);
     setTimeout(() => { setSent(false); setType(""); setSubject(""); setMsg(""); setPriority("Medium") }, 3000);
@@ -1377,7 +1381,7 @@ export default function App() {
       const timeout = new Promise((_, reject) => setTimeout(() => reject("timeout"), 4000));
       Promise.race([supabaseLoadProfile(), timeout]).then(sp => {
         if (sp && sp.name && sp.email) saveProfile(sp);
-      }).catch(() => {}).finally(() => setSupaChecked(true));
+      }).catch(() => { }).finally(() => setSupaChecked(true));
     } else { setSupaChecked(true); }
   }, [profLoaded, profile, supaChecked, saveProfile]);
   const T = TH[theme];
