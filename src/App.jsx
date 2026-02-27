@@ -25,7 +25,10 @@ async function supabaseUpsertProfile(profile) {
 async function supabaseLoadProfile() {
   try {
     const deviceId = getDeviceId();
-    const res = await fetch("/api/profile?device_id=" + deviceId);
+    // Also try to get email from localStorage for fallback (cache cleared scenario)
+    let emailParam = "";
+    try { const raw = localStorage.getItem("user_profile"); if (raw) { const p = JSON.parse(raw); if (p.email) emailParam = "&email=" + encodeURIComponent(p.email); } } catch { }
+    const res = await fetch("/api/profile?device_id=" + deviceId + emailParam);
     if (!res.ok) return null;
     const rows = await res.json();
     if (rows && rows.length > 0) return rows[0];
