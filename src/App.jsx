@@ -1192,9 +1192,18 @@ function ContactPage({ T }) {
       screen: window.screen.width + "x" + window.screen.height,
       profile: { name: profile.name || "", email: profile.email || "", designation: profile.designation || "", unit: profile.unit || "", hospital: profile.hospital || "", city: profile.city || "", country: profile.country || "" }
     };
+    // Save locally
     const updated = [entry, ...history].slice(0, 20);
     try { await storeSet("feedback_history", JSON.stringify(updated)) } catch { }
     setHistory(updated);
+    // Send to Supabase via proxy
+    try {
+      await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        type, priority, subject, message: msg,
+        profile_name: profile.name || "", profile_email: profile.email || "", profile_designation: profile.designation || "", profile_hospital: profile.hospital || "", profile_city: profile.city || "",
+        device_id: getDeviceId(), device: entry.device, browser: entry.browser, screen: entry.screen, app_version: "NeoNEST v1.0"
+      }) });
+    } catch (e) { console.warn("Feedback sync failed:", e); }
     setSent(true);
     setTimeout(() => { setSent(false); setType(""); setSubject(""); setMsg(""); setPriority("Medium") }, 3000);
   };
