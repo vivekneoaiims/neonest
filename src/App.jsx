@@ -243,7 +243,7 @@ const HELP = {
   caInTPN: "ON: Ca Gluconate added to Syringe 2.\nOFF: 10% Ca Gluconate given as separate infusion.",
   po4InTPN: "ON: Potassium Phosphate (KPO4) added to Syringe 2.\nOFF: KPO4 given as separate infusion.\nDefault: OFF (separate).",
   celcel: "Celcel (trace elements): Usual 1 mL/kg/day.\nAdd after 2 weeks of age.\nAvoid in cholestasis.",
-  mviHelp: "MVI (Multivitamin injection): Usual 1 mL/kg/day.\nAdded to Syringe 1 (lipid syringe).",
+  mviHelp: "MVI (Multivitamin): Usual 1 mL/kg/day.\nAdded to Syringe 1 (lipid syringe).",
   overfill: "Overfill factor:\n= 1: Make in 50 mL syringe (shows Per 50 mL).\n> 1: Make full day volume with extra for priming.\n1.1 = 10% extra, 1.2 = 20% extra.\nShows Volume vs Adjusted Volume.",
   syringe: "2 syringes: S1 = Lipid, S2 = Protein + Electrolytes + Dextrose.\n3 syringes: S1 = Lipid, S2 = Protein + Electrolytes, S3 = Dextrose only.",
   girFluid: "Fluid available for dextrose in mL/kg/day.\nIn TPN context this equals the glucose fluid volume after subtracting lipids, amino acids, electrolytes etc.",
@@ -766,6 +766,32 @@ function GIRPage({ T }) {
 
 // ━━━ Other Pages ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ━━━ Nutrient Database ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PreNan PTF per-gram values (Nestlé PreNan brand)
+// Na/K converted from mg to mEq (Na÷23, K÷39.1). vitd kept as IU/g total (perDay nutrient).
+const PTF_PRENAN = {
+  energy: 4.93,    // kcal/g
+  protein: 0.117,  // g/g
+  fat: 0.248,      // g/g
+  carb: 0.557,     // g/g
+  ca: 6.1,         // mg/g
+  po4: 3.05,       // mg/g
+  fe: 0.09,        // mg/g
+  vitd: 6.0,       // IU/g (perDay nutrient — total IU per gram PTF)
+  na: 0.0957,      // mEq/g (2.2 mg/g ÷ 23)
+  k: 0.1279,       // mEq/g (5.0 mg/g ÷ 39.1)
+  mg: 0.37,        // mg/g
+  zn: 0.032,       // mg/g
+  vita: 59.27,     // IU/g
+  vite: 0.18,      // IU/g
+  vitk: 0.20,      // mcg/g
+  vitc: 0.75,      // mg/g
+  folic: 2.0,      // mcg/g
+  cu: 4.4,         // mcg/g (0.0044 mg/g × 1000)
+  thia: 0.007,     // mg/g
+  ribo: 0.0089,    // mg/g
+  nica: 0.09,      // mg/g
+  pyri: 0.005,     // mg/g
+};
 const NUTRIENTS = [
   { k: "energy", n: "Energy", u: "kcal/kg", bm: 67, fm: 78, hm: 4, aap: [105, 130], esp: [110, 135] },
   { k: "protein", n: "Protein", u: "g/kg", bm: 1.1, fm: 1.9, hm: 0.3, aap: [3.5, 4.0], esp: [3.5, 4.0] },
@@ -785,6 +811,10 @@ const NUTRIENTS = [
   { k: "vitc", n: "Vitamin C", u: "mg/kg/d", bm: 10.6, fm: 6.67, hm: 3.75, aap: [42, 42], esp: [11, 46] },
   { k: "folic", n: "Folic acid", u: "mcg/kg/d", bm: 3.3, fm: 16.7, hm: 7.5, aap: [40, 40], esp: [35, 100] },
   { k: "cu", n: "Copper", u: "mcg/kg/d", bm: 73, fm: 35.6, hm: 10, aap: [100, 108], esp: [100, 132] },
+  { k: "thia", n: "Thiamine (B1)", u: "mg/kg/d", bm: 0.016, fm: 0.1, hm: 0.02, esp: [0.2, 0.3] },
+  { k: "ribo", n: "Riboflavin (B2)", u: "mg/kg/d", bm: 0.037, fm: 0.1, hm: 0.03, esp: [0.3, 0.4] },
+  { k: "nica", n: "Nicotinamide (B3)", u: "mg/kg/d", bm: 0.17, fm: 0.68, hm: 0.05, esp: [3.6, 4.8] },
+  { k: "pyri", n: "Pyridoxine (B6)", u: "mg/kg/d", bm: 0.011, fm: 0.063, hm: 0.02, esp: [0.045, 0.3] },
 ];
 function mergeNutDB(overrides) {
   if (!overrides) return NUTRIENTS;
@@ -796,6 +826,7 @@ function mergeNutDB(overrides) {
       bm: ov.bm != null ? ov.bm : nut.bm,
       fm: ov.fm != null ? ov.fm : nut.fm,
       hm: ov.hm != null ? ov.hm : nut.hm,
+      ptf: ov.ptf != null ? ov.ptf : (PTF_PRENAN[nut.k] ?? nut.hm),
       aap: ov.aap || nut.aap,
       esp: ov.esp || nut.esp,
     };
@@ -814,7 +845,8 @@ function calcNutrition(ip, nutDB) {
   const rows = db.map(nut => {
     let fromEbm = ebmMl * nut.bm / 100;
     let fromFm = fmMl * nut.fm / 100;
-    let fromHmf = hmfG * nut.hm;
+    const hmVal = ip.fortType === "PTF" ? (nut.ptf ?? PTF_PRENAN[nut.k] ?? nut.hm) : nut.hm;
+    let fromHmf = hmfG * hmVal;
     let fromSup = 0;
     if (nut.k === "ca") fromSup = (ip.caMl * (ip.caConcCa || 0)) + (ip.extraCaMgDay || 0);
     if (nut.k === "fe") fromSup = ip.feMl * ip.feConc;
@@ -824,6 +856,10 @@ function calcNutrition(ip, nutDB) {
     if (nut.k === "vitc") fromSup = (ip.mviMl || 0) * (ip.mviVitcPerMl || 40);
     if (nut.k === "vite") fromSup = (ip.mviMl || 0) * (ip.mviVitePerMl || 5);
     if (nut.k === "zn") fromSup = (ip.mviMl || 0) * (ip.mviZnPerMl || 2.5);
+    if (nut.k === "ribo") fromSup = (ip.mviMl || 0) * (ip.mviRiboPerMl || 1);
+    if (nut.k === "nica") fromSup = (ip.mviMl || 0) * (ip.mviNicaPerMl || 10);
+    if (nut.k === "pyri") fromSup = (ip.mviMl || 0) * (ip.mviPyriPerMl || 0.82);
+    if (nut.k === "thia") fromSup = (ip.mviMl || 0) * (ip.mviThiaPerMl || 1.62);
     const totalAbs = fromEbm + fromFm + fromHmf + fromSup;
     const perKg = nut.perDay ? totalAbs : totalAbs / wt;
     const rda = nut.esp;
@@ -835,14 +871,17 @@ function calcNutrition(ip, nutDB) {
   const pe = eRow && pRow && eRow.perKg > 0 ? (pRow.perKg / eRow.perKg) * 1000 : 0;
   return { rows, feedMlKg, totalFeedMl, ebmMl, fmMl, hmfG, wtGain, pe, wt };
 }
-function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
+function NutDBEditor({ T, nutOv, saveNutOv, fortType, onClose, onSupSaved }) {
   const [tab, setTab] = useState("bm");
   const [d, setD] = useState(() => {
     const init = {};
     NUTRIENTS.forEach(nut => {
       const ov = nutOv?.[nut.k] || {};
       init[nut.k] = {
-        bm: ov.bm ?? nut.bm, fm: ov.fm ?? nut.fm, hm: ov.hm ?? nut.hm,
+        bm: ov.bm ?? nut.bm,
+        fm: ov.fm ?? nut.fm,
+        hm: ov.hm ?? nut.hm,                              // HMF values — always original
+        ptf: ov.ptf ?? (PTF_PRENAN[nut.k] ?? nut.hm),    // PTF values — from PreNan or saved overrides
         aap: ov.aap ? [...ov.aap] : (nut.aap ? [...nut.aap] : [0, 0]),
         esp: ov.esp ? [...ov.esp] : (nut.esp ? [...nut.esp] : [0, 0])
       };
@@ -858,10 +897,18 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
     mviVitcPerMl: nutOv?.__supDef?.mviVitcPerMl ?? 40,
     mviVitePerMl: nutOv?.__supDef?.mviVitePerMl ?? 5,
     mviZnPerMl: nutOv?.__supDef?.mviZnPerMl ?? 2.5,
+    mviRiboPerMl: nutOv?.__supDef?.mviRiboPerMl ?? 1,
+    mviNicaPerMl: nutOv?.__supDef?.mviNicaPerMl ?? 10,
+    mviPyriPerMl: nutOv?.__supDef?.mviPyriPerMl ?? 0.82,
+    mviThiaPerMl: nutOv?.__supDef?.mviThiaPerMl ?? 1.62,
   }));
-  const upd = (k, field, val) => setD(p => ({ ...p, [k]: { ...p[k], [field]: val } }));
+  const upd = (k, field, val) => {
+    // When editing the fortifier tab, write to 'ptf' or 'hm' depending on active fortType
+    const actualField = field === "hm" ? (fortType === "PTF" ? "ptf" : "hm") : field;
+    setD(p => ({ ...p, [k]: { ...p[k], [actualField]: val } }));
+  };
   const updRda = (k, field, idx, val) => setD(p => { const arr = [...(p[k][field] || [0, 0])]; arr[idx] = val; return { ...p, [k]: { ...p[k], [field]: arr } }; });
-  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: "HMF/PTF", sub: "per gram" }, { id: "sup", l: "Suppl.", sub: "defaults" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN", sub: "RDA range" }];
+  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: fortType === "PTF" ? "PTF" : "HMF", sub: "per gram" }, { id: "sup", l: "Suppl.", sub: "defaults" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN", sub: "RDA range" }];
   const isRda = tab === "aap" || tab === "esp";
   const isSup = tab === "sup";
   return <div style={{ background: T.card, borderRadius: 12, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
@@ -889,13 +936,17 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
               <input type="number" value={supDef[item.key]} onChange={e => setSupDef(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.select()} step={item.step} style={inpSt} />
             </div>;
           })}
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.t3, marginBottom: 6, marginTop: 12, textTransform: "uppercase" }}>MVI (Multivitamin Injection) — per mL</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.t3, marginBottom: 6, marginTop: 12, textTransform: "uppercase" }}>MVI (Multivitamin) — per mL</div>
           {[
             { label: "Vitamin A", key: "mviVitaPerMl", unit: "IU/mL", step: 100 },
             { label: "Vitamin D (Cholecalciferol)", key: "mviVitdPerMl", unit: "IU/mL", step: 50 },
             { label: "Vitamin C (Ascorbic Acid)", key: "mviVitcPerMl", unit: "mg/mL", step: 1 },
             { label: "Vitamin E (Tocopheryl Acetate)", key: "mviVitePerMl", unit: "IU/mL", step: 0.5 },
             { label: "Zinc (elemental)", key: "mviZnPerMl", unit: "mg/mL", step: 0.1 },
+            { label: "Thiamine (B1) — as base", key: "mviThiaPerMl", unit: "mg/mL", step: 0.01 },
+            { label: "Riboflavin (B2)", key: "mviRiboPerMl", unit: "mg/mL", step: 0.1 },
+            { label: "Nicotinamide (B3)", key: "mviNicaPerMl", unit: "mg/mL", step: 0.5 },
+            { label: "Pyridoxine (B6) — as base", key: "mviPyriPerMl", unit: "mg/mL", step: 0.01 },
           ].map(item => {
             const inpSt = { width: 80, height: 30, padding: "0 4px", fontSize: 12, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 6, color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", boxSizing: "border-box", textAlign: "center" };
             return <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 4px", borderBottom: "1px solid " + T.border + "44" }}>
@@ -903,7 +954,7 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
               <input type="number" value={supDef[item.key]} onChange={e => setSupDef(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.select()} step={item.step} style={inpSt} />
             </div>;
           })}
-          <div style={{ fontSize: 9, color: T.t3, marginTop: 8, padding: "0 4px" }}>Default values based on USV Aquavit brand (0.5 mL/day for infants). Edit to match your current MVI brand.</div>
+          <div style={{ fontSize: 9, color: T.t3, marginTop: 8, padding: "0 4px" }}>Default values based on Vi-syneral Z brand (0.5 mL/day for infants). Edit to match your current MVI brand.</div>
         </div>
       </> : <>
         {/* Header */}
@@ -911,22 +962,32 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
           <span style={{ fontSize: 9, fontWeight: 700, color: T.t3 }}>NUTRIENT</span>
           {isRda ? <><span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "center" }}>LOW</span><span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "center" }}>HIGH</span></> : <span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "center" }}>VALUE</span>}
         </div>
+        {tab === "hm" && <div style={{ padding: "6px 4px 4px", borderBottom: "1px solid " + T.border + "44" }}>
+          <div style={{ fontSize: 9, color: T.t3, marginBottom: 4 }}>
+            {fortType === "PTF" ? <>Showing <span style={{ fontWeight: 700, color: T.accentText }}>PTF</span> values — defaults based on <span style={{ fontWeight: 600 }}>PreNan</span> brand. Edit below to customise.</> : <>Showing <span style={{ fontWeight: 700, color: T.green }}>HMF</span> values. Switch to PTF in Feeds to edit PTF values.</>}
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={() => { const upds = {}; NUTRIENTS.forEach(nut => { upds[nut.k] = { ...d[nut.k], ptf: PTF_PRENAN[nut.k] ?? nut.hm }; }); setD(upds); }} style={{ flex: 1, padding: "5px 8px", fontSize: 9, fontWeight: 700, background: fortType === "PTF" ? T.accentDim : T.card, color: fortType === "PTF" ? T.accentText : T.t3, border: "1px solid " + (fortType === "PTF" ? T.accent + "33" : T.border), borderRadius: 6, cursor: "pointer" }}>↺ Load PTF (PreNan)</button>
+            <button onClick={() => { const upds = {}; NUTRIENTS.forEach(nut => { const ov = nutOv?.[nut.k] || {}; upds[nut.k] = { ...d[nut.k], hm: ov.hm ?? nut.hm }; }); setD(upds); }} style={{ flex: 1, padding: "5px 8px", fontSize: 9, fontWeight: 700, background: fortType === "HMF" ? T.green + "10" : T.card, color: fortType === "HMF" ? T.green : T.t3, border: "1px solid " + (fortType === "HMF" ? T.green + "33" : T.border), borderRadius: 6, cursor: "pointer" }}>↺ Load HMF defaults</button>
+          </div>
+        </div>}
         {NUTRIENTS.map(nut => {
           const val = d[nut.k];
           const inpSt = { width: "100%", height: 30, padding: "0 4px", fontSize: 12, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 6, color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", boxSizing: "border-box", textAlign: "center" };
+          const displayVal = (tab === "hm") ? (fortType === "PTF" ? val.ptf : val.hm) : val[tab];
           return <div key={nut.k} style={{ display: "grid", gridTemplateColumns: isRda ? "1fr 64px 64px" : "1fr 80px", gap: 4, padding: "5px 4px", borderBottom: "1px solid " + T.border + "44", alignItems: "center" }}>
             <div><div style={{ fontSize: 11, fontWeight: 600, color: T.t1 }}>{nut.n}</div><div style={{ fontSize: 8, color: T.t3 }}>{nut.u}</div></div>
             {isRda ? <>
               <input type="number" value={val[tab][0]} onChange={e => updRda(nut.k, tab, 0, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.1} style={inpSt} />
               <input type="number" value={val[tab][1]} onChange={e => updRda(nut.k, tab, 1, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.1} style={inpSt} />
-            </> : <input type="number" value={val[tab]} onChange={e => upd(nut.k, tab, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.01} style={inpSt} />}
+            </> : <input type="number" value={displayVal} onChange={e => upd(nut.k, tab, parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} step={0.01} style={inpSt} />}
           </div>;
         })}
       </>}
     </div>
     <div style={{ display: "flex", gap: 6, padding: "8px 10px", borderTop: "1px solid " + T.border }}>
       <button onClick={() => { saveNutOv({ ...d, __supDef: supDef }); if (onSupSaved) onSupSaved(supDef); alert("Nutrition database saved!") }} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>Save Defaults</button>
-      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); setSupDef({ caConcCa: 16, caConcP: 8, feConc: 10, mviVitaPerMl: 3000, mviVitdPerMl: 400, mviVitcPerMl: 40, mviVitePerMl: 5, mviZnPerMl: 2.5 }); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
+      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, ptf: PTF_PRENAN[nut.k] ?? nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); setSupDef({ caConcCa: 16, caConcP: 8, feConc: 10, mviVitaPerMl: 3000, mviVitdPerMl: 400, mviVitcPerMl: 40, mviVitePerMl: 5, mviZnPerMl: 2.5, mviRiboPerMl: 1, mviNicaPerMl: 10, mviPyriPerMl: 0.82, mviThiaPerMl: 1.62 }); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
     </div>
   </div>;
 }
@@ -935,12 +996,17 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
     babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 12, totalMlKg: 150,
     feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0, hmfFreq: 12,
     caMl: 0, caConcCa: nutOv?.__supDef?.caConcCa ?? 16, caConcP: nutOv?.__supDef?.caConcP ?? 8, feMl: 0, feConc: nutOv?.__supDef?.feConc ?? 10, extraCaMgDay: 0, extraPMgDay: 0, vitdIU: 400,
+    fortType: "HMF",
     mviMl: 0,
     mviVitaPerMl: nutOv?.__supDef?.mviVitaPerMl ?? 3000,
     mviVitdPerMl: nutOv?.__supDef?.mviVitdPerMl ?? 400,
     mviVitcPerMl: nutOv?.__supDef?.mviVitcPerMl ?? 40,
     mviVitePerMl: nutOv?.__supDef?.mviVitePerMl ?? 5,
-    mviZnPerMl: nutOv?.__supDef?.mviZnPerMl ?? 2.5
+    mviZnPerMl: nutOv?.__supDef?.mviZnPerMl ?? 2.5,
+    mviRiboPerMl: nutOv?.__supDef?.mviRiboPerMl ?? 1,
+    mviNicaPerMl: nutOv?.__supDef?.mviNicaPerMl ?? 10,
+    mviPyriPerMl: nutOv?.__supDef?.mviPyriPerMl ?? 0.82,
+    mviThiaPerMl: nutOv?.__supDef?.mviThiaPerMl ?? 1.62
   });
   const [show, setShow] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -948,7 +1014,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const s = k => v => setIp(p => ({ ...p, [k]: v }));
   const nutDB = useMemo(() => mergeNutDB(nutOv), [nutOv]);
   const res = useMemo(() => calcNutrition(ip, nutDB), [ip, nutDB]);
-  const fortLabel = (defaults?.hmfProtPerG || 0) < 0.2 ? "PTF" : "HMF";
+  const fortLabel = ip.fortType === "PTF" ? "PTF" : "HMF";
 
   const [babyNutHist, setBabyNutHist] = useState([]);
   useEffect(() => { (async () => { try { const raw = await storeGet("nut_audit_history"); if (raw) { const all = JSON.parse(raw); const cutoff = Date.now() - 30 * 86400000; setBabyNutHist(all.filter(b => new Date(b.ts).getTime() > cutoff)) } } catch { } })() }, []);
@@ -985,6 +1051,9 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
         : <Row><NI label="Total feeds" unit="mL/kg/d" value={ip.totalMlKg} onChange={s("totalMlKg")} step={5} T={T} /></Row>}
       <Row><Pills label="Feed source" value={ip.feedSrc} options={["EBM", "Formula", "Mixed"]} onChange={s("feedSrc")} T={T} /></Row>
       {ip.feedSrc === "Mixed" && <Row><NI label="EBM %" unit="%" value={ip.ebmPct} onChange={s("ebmPct")} step={5} min={0} max={100} T={T} /></Row>}
+      <Row>
+        <Pills label="Fortifier type" value={ip.fortType} options={[{ label: "HMF", value: "HMF" }, { label: "PTF", value: "PTF" }]} onChange={s("fortType")} T={T} />
+      </Row>
       <Row><Pills label={fortLabel + " entry"} value={ip.hmfMode} options={[{ label: "Per Feed", value: "feed" }, { label: "Per Day", value: "day" }]} onChange={s("hmfMode")} T={T} />
         {ip.hmfMode === "feed" ? <NI label={fortLabel + "/feed"} unit="g" value={ip.hmfPerFeed} onChange={s("hmfPerFeed")} step={0.1} T={T} /> : <NI label={fortLabel + "/day"} unit="g" value={ip.hmfPerDay} onChange={s("hmfPerDay")} step={0.5} T={T} />}
       </Row>
@@ -996,9 +1065,9 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       <Row><NI label="Iron syrup" unit="mL/d" value={ip.feMl} onChange={s("feMl")} step={0.1} T={T} /><NI label="Iron conc." unit="mg/mL" value={ip.feConc} onChange={s("feConc")} step={1} T={T} /></Row>
       <Row><NI label="Extra calcium" unit="mg/d" value={ip.extraCaMgDay} onChange={s("extraCaMgDay")} step={5} T={T} /><NI label="Extra phosphate" unit="mg/d" value={ip.extraPMgDay} onChange={s("extraPMgDay")} step={5} T={T} /></Row>
       <Row><NI label="Vitamin D" unit="IU/d" value={ip.vitdIU} onChange={s("vitdIU")} step={100} T={T} /></Row>
-      <Row><NI label="MVI (Multivitamin Inj.)" unit="mL/d" value={ip.mviMl} onChange={s("mviMl")} step={0.1} T={T} /></Row>
-      {ip.mviMl > 0 && <div style={{ padding: "6px 10px", background: T.accentDim, borderRadius: 8, fontSize: 10, color: T.t3, marginBottom: 6 }}>
-        MVI contributes: VitA {r1(ip.mviMl * ip.mviVitaPerMl)} IU · VitD {r1(ip.mviMl * ip.mviVitdPerMl)} IU · VitC {r1(ip.mviMl * ip.mviVitcPerMl)} mg · VitE {r1(ip.mviMl * ip.mviVitePerMl)} IU · Zn {r1(ip.mviMl * ip.mviZnPerMl)} mg
+      <Row><NI label="MVI (Multivitamin)" unit="mL/d" value={ip.mviMl} onChange={s("mviMl")} step={0.1} T={T} /></Row>
+      {ip.mviMl > 0 && <div style={{ padding: "6px 10px", background: T.accentDim, borderRadius: 8, fontSize: 10, color: T.t3, marginBottom: 6, lineHeight: 1.7 }}>
+        <span style={{ fontWeight: 600, color: T.accentText }}>MVI contributes: </span>VitA {r1(ip.mviMl * ip.mviVitaPerMl)} IU · VitD {r1(ip.mviMl * ip.mviVitdPerMl)} IU · VitC {r1(ip.mviMl * ip.mviVitcPerMl)} mg · VitE {r1(ip.mviMl * ip.mviVitePerMl)} IU · Zn {r1(ip.mviMl * ip.mviZnPerMl)} mg · B1 {r1(ip.mviMl * ip.mviThiaPerMl)} mg · B2 {r1(ip.mviMl * ip.mviRiboPerMl)} mg · B3 {r1(ip.mviMl * ip.mviNicaPerMl)} mg · B6 {r1(ip.mviMl * ip.mviPyriPerMl)} mg
       </div>}
     </Sec>
 
@@ -1009,7 +1078,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       </button>
     </div>
 
-    {editing && <NutDBEditor T={T} nutOv={nutOv} saveNutOv={saveNutOv} onClose={() => setEditing(false)} onSupSaved={sd => { if (sd.caConcCa != null) s("caConcCa")(sd.caConcCa); if (sd.caConcP != null) s("caConcP")(sd.caConcP); if (sd.feConc != null) s("feConc")(sd.feConc); }} />}
+    {editing && <NutDBEditor T={T} nutOv={nutOv} saveNutOv={saveNutOv} fortType={ip.fortType} onClose={() => setEditing(false)} onSupSaved={sd => { if (sd.caConcCa != null) s("caConcCa")(sd.caConcCa); if (sd.caConcP != null) s("caConcP")(sd.caConcP); if (sd.feConc != null) s("feConc")(sd.feConc); }} />}
 
     <button onClick={() => setShow(true)} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", marginBottom: 12, boxShadow: "0 4px 16px " + T.accent + "33" }}>Audit Nutrition</button>
 
@@ -1034,7 +1103,13 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       {/* Nutrient table */}
       <div style={{ background: T.card, borderRadius: 12, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
         <div style={{ padding: "10px 12px", borderBottom: "1px solid " + T.border }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.t1 }}>Nutrient Audit</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.t1 }}>Nutrient Audit</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: ip.fortType === "PTF" ? T.accentDim : T.green + "15", color: ip.fortType === "PTF" ? T.accentText : T.green, border: "1px solid " + (ip.fortType === "PTF" ? T.accent + "33" : T.green + "33") }}>{fortLabel}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.inp, color: T.t3 }}>{ip.feedSrc}</span>
+            </div>
+          </div>
           <div style={{ fontSize: 10, color: T.t3 }}>Color-coded vs ESPGHAN RDA</div>
         </div>
         {/* Header */}
@@ -1060,6 +1135,75 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
         })}
         {res.rows.length > 8 && <button onClick={() => setExpanded(!expanded)} style={{ width: "100%", padding: "8px 0", fontSize: 11, fontWeight: 600, color: T.accentText, background: T.accentDim, border: "none", cursor: "pointer" }}>{expanded ? "Show less" : "Show all " + res.rows.length + " nutrients"}</button>}
       </div>
+
+      {/* Deficiency Advisory */}
+      {(() => {
+        const ADVICE = {
+          energy:  { label: "Energy", icon: "⚡", tips: ["Increase total feed volume (if tolerated)", "Switch EBM to formula or use mixed feeds for higher caloric density", "Increase HMF/PTF dose (check for tolerance)", "Consider concentrated formula if fluid-restricted"] },
+          protein: { label: "Protein", icon: "🧬", tips: ["Increase HMF/PTF — each gram adds ~0.3 g protein", "Switch to a higher-protein formula", "Check HMF mixing accuracy (per feed vs per day entry)"] },
+          fat:     { label: "Fat", icon: "🔸", tips: ["Add MCT oil supplement if clinically indicated", "Increase feed volume to boost fat intake from EBM/formula", "Reduce HMF if it is diluting fat-dense EBM"] },
+          ca:      { label: "Calcium", icon: "🦴", tips: ["Increase Ca/P syrup dose", "Increase HMF — significant source of calcium", "Consider higher-concentration Ca/P preparation", "Ensure Ca supplement is given separately from iron"] },
+          po4:     { label: "Phosphorus", icon: "🔬", tips: ["Increase Ca/P syrup dose (phosphorus rises with calcium)", "Increase HMF/PTF dose", "Add separate phosphate supplement if Ca:P ratio is already adequate"] },
+          fe:      { label: "Iron", icon: "🔴", tips: ["Increase iron syrup dose (target 2–3 mg/kg/d elemental iron)", "Check iron concentration of current preparation", "Start iron if not already given (typically from 2–4 weeks of age)", "Give iron 2 hours apart from Ca/P supplement"] },
+          vitd:    { label: "Vitamin D", icon: "☀️", tips: ["Increase Vitamin D supplement dose (target 400–1000 IU/d)", "MVI provides some Vitamin D — ensure MVI is being given", "AAP recommends 400 IU/d minimum; ESPGHAN up to 1000 IU/d"] },
+          vita:    { label: "Vitamin A", icon: "🟠", tips: ["Start or increase MVI dose", "Vitamin A is predominantly MVI-sourced in preterm infants", "Consider dedicated Vitamin A supplementation if very deficient"] },
+          vitc:    { label: "Vitamin C", icon: "🍊", tips: ["Ensure MVI is given daily", "Increase MVI dose if not at recommended level", "Formula typically provides more Vit C than EBM"] },
+          vite:    { label: "Vitamin E", icon: "🌿", tips: ["Ensure MVI is given daily", "Increase MVI dose", "Vit E absorption improves with adequate fat intake"] },
+          zn:      { label: "Zinc", icon: "⚙️", tips: ["Ensure MVI is given (Zinc is MVI-sourced)", "Increase MVI dose if tolerated", "Consider dedicated zinc supplement in very preterm infants with EBM-only feeds"] },
+          ribo:    { label: "Riboflavin (B2)", icon: "💛", tips: ["Start or increase MVI dose (key source of B2)", "Phototherapy degrades riboflavin — ensure MVI is given during phototherapy", "Protect MVI from light during administration"] },
+          nica:    { label: "Nicotinamide (B3)", icon: "🟡", tips: ["Start or increase MVI dose (main source of B3 in preterm infants)", "Increasing formula volume also improves B3 intake", "Exclusively EBM-fed infants are particularly at risk — prioritise MVI"] },
+          pyri:    { label: "Pyridoxine (B6)", icon: "🟤", tips: ["Start or increase MVI dose (primary B6 source)", "Formula provides more B6 than EBM", "B6 deficiency can cause seizures — ensure MVI is never omitted"] },
+          thia:    { label: "Thiamine (B1)", icon: "🔶", tips: ["Start or increase MVI dose immediately (B1 is MVI-sourced)", "Thiamine deficiency can cause lactic acidosis and cardiac failure — treat urgently", "Exclusively formula-fed infants get more B1 than EBM-fed; prioritise MVI in EBM-fed preterms", "Ensure MVI is never omitted in infants on prolonged parenteral nutrition"] },
+          na:      { label: "Sodium", icon: "🧂", tips: ["Increase NaCl supplementation (sodium deficit is common in VLBW infants)", "Check serum sodium before adjusting", "Target 3–5 mEq/kg/d in ESPGHAN guidelines for preterms"] },
+          mg:      { label: "Magnesium", icon: "🔷", tips: ["Increase feed volume", "Check if formula has adequate Mg content", "HMF provides minimal Mg — formula feeds preferable if deficient"] },
+        };
+        const grosslyLow = res.rows.filter(r => {
+          if (!r.esp || r.esp[0] === 0) return false;
+          return r.perKg < r.esp[0] * 0.80;
+        });
+        if (grosslyLow.length === 0) return null;
+        return <div style={{ background: T.card, borderRadius: 12, border: "1.5px solid " + T.amber + "55", boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
+          <div style={{ padding: "10px 12px", background: T.amber + "12", borderBottom: "1px solid " + T.amber + "30", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.amber }}>Deficiency Advisory</div>
+              <div style={{ fontSize: 10, color: T.t3 }}>{grosslyLow.length} nutrient{grosslyLow.length > 1 ? "s" : ""} grossly below ESPGHAN RDA (&lt;80%)</div>
+            </div>
+          </div>
+          <div style={{ padding: "8px 10px" }}>
+            {grosslyLow.map((r, i) => {
+              const adv = ADVICE[r.k];
+              const pct = r.esp[0] > 0 ? Math.round(r.perKg / r.esp[0] * 100) : 0;
+              return <div key={r.k} style={{ marginBottom: i < grosslyLow.length - 1 ? 10 : 0, paddingBottom: i < grosslyLow.length - 1 ? 10 : 0, borderBottom: i < grosslyLow.length - 1 ? "1px solid " + T.border + "55" : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 15 }}>{adv?.icon || "⚠️"}</span>
+                    <div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.red }}>{adv?.label || r.n}</span>
+                      <span style={{ fontSize: 9, color: T.t3, marginLeft: 6 }}>{r.u}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.red, fontFamily: "'JetBrains Mono',monospace" }}>{r.perKg < 10 ? r.perKg.toFixed(1) : Math.round(r.perKg)}</div>
+                      <div style={{ fontSize: 8, color: T.t3 }}>vs ≥{r.esp[0]} target</div>
+                    </div>
+                    <div style={{ width: 36, height: 36, borderRadius: 18, background: T.red + "15", border: "2px solid " + T.red + "40", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: T.red }}>{pct}%</span>
+                    </div>
+                  </div>
+                </div>
+                {adv?.tips && <div style={{ paddingLeft: 8 }}>
+                  {adv.tips.map((tip, ti) => <div key={ti} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 3 }}>
+                    <span style={{ color: T.amber, fontWeight: 700, fontSize: 11, flexShrink: 0, marginTop: 1 }}>→</span>
+                    <span style={{ fontSize: 11, color: T.t2, lineHeight: 1.5 }}>{tip}</span>
+                  </div>)}
+                </div>}
+              </div>;
+            })}
+          </div>
+        </div>;
+      })()}
 
       {/* Breakdown for key nutrients */}
       <div style={{ background: T.card, borderRadius: 12, padding: 10, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8 }}>
@@ -1493,7 +1637,7 @@ function Onboarding({ T, onDone }) {
       {loginMode && <div style={{ background: T.card, borderRadius: 14, padding: 24, border: "1px solid " + T.border, boxShadow: T.shadow }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.accentDim, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={T.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={T.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
           </div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.t1, marginBottom: 4 }}>Quick Login</div>
           <div style={{ fontSize: 12, color: T.t3 }}>We'll fetch your saved profile instantly</div>
@@ -1509,7 +1653,7 @@ function Onboarding({ T, onDone }) {
           Could not connect. Please check your internet and try again.
         </div>}
         <button onClick={doEmailLogin} disabled={!loginValid || loginStatus === "loading"} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: loginValid && loginStatus !== "loading" ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: loginValid && loginStatus !== "loading" ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          {loginStatus === "loading" ? <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Looking up profile…</> : "Login →"}
+          {loginStatus === "loading" ? <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> Looking up profile…</> : "Login →"}
         </button>
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <button onClick={() => { setLoginMode(false); setLoginStatus("idle"); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: T.t3, fontWeight: 600, fontFamily: "inherit", padding: 4 }}>
