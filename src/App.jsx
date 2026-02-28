@@ -818,8 +818,12 @@ function calcNutrition(ip, nutDB) {
     let fromSup = 0;
     if (nut.k === "ca") fromSup = (ip.caMl * (ip.caConcCa || 0)) + (ip.extraCaMgDay || 0);
     if (nut.k === "fe") fromSup = ip.feMl * ip.feConc;
-    if (nut.k === "vitd") fromSup = ip.vitdIU;
+    if (nut.k === "vitd") fromSup = (ip.vitdIU || 0) + (ip.mviMl || 0) * (ip.mviVitdPerMl || 400);
     if (nut.k === "po4") fromSup = (ip.caMl * (ip.caConcP || 0)) + (ip.extraPMgDay || 0);
+    if (nut.k === "vita") fromSup = (ip.mviMl || 0) * (ip.mviVitaPerMl || 3000);
+    if (nut.k === "vitc") fromSup = (ip.mviMl || 0) * (ip.mviVitcPerMl || 40);
+    if (nut.k === "vite") fromSup = (ip.mviMl || 0) * (ip.mviVitePerMl || 5);
+    if (nut.k === "zn") fromSup = (ip.mviMl || 0) * (ip.mviZnPerMl || 2.5);
     const totalAbs = fromEbm + fromFm + fromHmf + fromSup;
     const perKg = nut.perDay ? totalAbs : totalAbs / wt;
     const rda = nut.esp;
@@ -849,6 +853,11 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
     caConcCa: nutOv?.__supDef?.caConcCa ?? 16,
     caConcP: nutOv?.__supDef?.caConcP ?? 8,
     feConc: nutOv?.__supDef?.feConc ?? 10,
+    mviVitaPerMl: nutOv?.__supDef?.mviVitaPerMl ?? 3000,
+    mviVitdPerMl: nutOv?.__supDef?.mviVitdPerMl ?? 400,
+    mviVitcPerMl: nutOv?.__supDef?.mviVitcPerMl ?? 40,
+    mviVitePerMl: nutOv?.__supDef?.mviVitePerMl ?? 5,
+    mviZnPerMl: nutOv?.__supDef?.mviZnPerMl ?? 2.5,
   }));
   const upd = (k, field, val) => setD(p => ({ ...p, [k]: { ...p[k], [field]: val } }));
   const updRda = (k, field, idx, val) => setD(p => { const arr = [...(p[k][field] || [0, 0])]; arr[idx] = val; return { ...p, [k]: { ...p[k], [field]: arr } }; });
@@ -868,6 +877,7 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
         {/* Supplement concentration defaults */}
         <div style={{ padding: "8px 4px 4px" }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: T.t1, marginBottom: 8 }}>Default supplement concentrations</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.t3, marginBottom: 6, marginTop: 4, textTransform: "uppercase" }}>Ca/P &amp; Iron</div>
           {[
             { label: "Ca/P syrup — Ca conc.", key: "caConcCa", unit: "mg/mL", step: 1 },
             { label: "Ca/P syrup — P conc.", key: "caConcP", unit: "mg/mL", step: 1 },
@@ -879,7 +889,21 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
               <input type="number" value={supDef[item.key]} onChange={e => setSupDef(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.select()} step={item.step} style={inpSt} />
             </div>;
           })}
-          <div style={{ fontSize: 9, color: T.t3, marginTop: 8, padding: "0 4px" }}>These values will be used as default concentrations when starting a new nutrition audit.</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.t3, marginBottom: 6, marginTop: 12, textTransform: "uppercase" }}>MVI (Multivitamin Injection) — per mL</div>
+          {[
+            { label: "Vitamin A", key: "mviVitaPerMl", unit: "IU/mL", step: 100 },
+            { label: "Vitamin D (Cholecalciferol)", key: "mviVitdPerMl", unit: "IU/mL", step: 50 },
+            { label: "Vitamin C (Ascorbic Acid)", key: "mviVitcPerMl", unit: "mg/mL", step: 1 },
+            { label: "Vitamin E (Tocopheryl Acetate)", key: "mviVitePerMl", unit: "IU/mL", step: 0.5 },
+            { label: "Zinc (elemental)", key: "mviZnPerMl", unit: "mg/mL", step: 0.1 },
+          ].map(item => {
+            const inpSt = { width: 80, height: 30, padding: "0 4px", fontSize: 12, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 6, color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", boxSizing: "border-box", textAlign: "center" };
+            return <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 4px", borderBottom: "1px solid " + T.border + "44" }}>
+              <div><div style={{ fontSize: 11, fontWeight: 600, color: T.t1 }}>{item.label}</div><div style={{ fontSize: 8, color: T.t3 }}>{item.unit}</div></div>
+              <input type="number" value={supDef[item.key]} onChange={e => setSupDef(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.select()} step={item.step} style={inpSt} />
+            </div>;
+          })}
+          <div style={{ fontSize: 9, color: T.t3, marginTop: 8, padding: "0 4px" }}>Default values based on USV Aquavit brand (0.5 mL/day for infants). Edit to match your current MVI brand.</div>
         </div>
       </> : <>
         {/* Header */}
@@ -902,7 +926,7 @@ function NutDBEditor({ T, nutOv, saveNutOv, onClose, onSupSaved }) {
     </div>
     <div style={{ display: "flex", gap: 6, padding: "8px 10px", borderTop: "1px solid " + T.border }}>
       <button onClick={() => { saveNutOv({ ...d, __supDef: supDef }); if (onSupSaved) onSupSaved(supDef); alert("Nutrition database saved!") }} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 700, background: T.btnGrad, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>Save Defaults</button>
-      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); setSupDef({ caConcCa: 16, caConcP: 8, feConc: 10 }); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
+      <button onClick={() => { saveNutOv(null); const init = {}; NUTRIENTS.forEach(nut => { init[nut.k] = { bm: nut.bm, fm: nut.fm, hm: nut.hm, aap: nut.aap ? [...nut.aap] : [0, 0], esp: nut.esp ? [...nut.esp] : [0, 0] }; }); setD(init); setSupDef({ caConcCa: 16, caConcP: 8, feConc: 10, mviVitaPerMl: 3000, mviVitdPerMl: 400, mviVitcPerMl: 40, mviVitePerMl: 5, mviZnPerMl: 2.5 }); alert("Reset to factory values!") }} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 600, background: T.card, color: T.red, border: "1px solid " + T.red + "33", borderRadius: 8, cursor: "pointer" }}>Reset</button>
     </div>
   </div>;
 }
@@ -910,7 +934,13 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const [ip, setIp] = useState({
     babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 12, totalMlKg: 150,
     feedSrc: "EBM", ebmPct: 70, hmfMode: "day", hmfPerFeed: 0, hmfPerDay: 0, hmfFreq: 12,
-    caMl: 0, caConcCa: nutOv?.__supDef?.caConcCa ?? 16, caConcP: nutOv?.__supDef?.caConcP ?? 8, feMl: 0, feConc: nutOv?.__supDef?.feConc ?? 10, extraCaMgDay: 0, extraPMgDay: 0, vitdIU: 400
+    caMl: 0, caConcCa: nutOv?.__supDef?.caConcCa ?? 16, caConcP: nutOv?.__supDef?.caConcP ?? 8, feMl: 0, feConc: nutOv?.__supDef?.feConc ?? 10, extraCaMgDay: 0, extraPMgDay: 0, vitdIU: 400,
+    mviMl: 0,
+    mviVitaPerMl: nutOv?.__supDef?.mviVitaPerMl ?? 3000,
+    mviVitdPerMl: nutOv?.__supDef?.mviVitdPerMl ?? 400,
+    mviVitcPerMl: nutOv?.__supDef?.mviVitcPerMl ?? 40,
+    mviVitePerMl: nutOv?.__supDef?.mviVitePerMl ?? 5,
+    mviZnPerMl: nutOv?.__supDef?.mviZnPerMl ?? 2.5
   });
   const [show, setShow] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -966,6 +996,10 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       <Row><NI label="Iron syrup" unit="mL/d" value={ip.feMl} onChange={s("feMl")} step={0.1} T={T} /><NI label="Iron conc." unit="mg/mL" value={ip.feConc} onChange={s("feConc")} step={1} T={T} /></Row>
       <Row><NI label="Extra calcium" unit="mg/d" value={ip.extraCaMgDay} onChange={s("extraCaMgDay")} step={5} T={T} /><NI label="Extra phosphate" unit="mg/d" value={ip.extraPMgDay} onChange={s("extraPMgDay")} step={5} T={T} /></Row>
       <Row><NI label="Vitamin D" unit="IU/d" value={ip.vitdIU} onChange={s("vitdIU")} step={100} T={T} /></Row>
+      <Row><NI label="MVI (Multivitamin Inj.)" unit="mL/d" value={ip.mviMl} onChange={s("mviMl")} step={0.1} T={T} /></Row>
+      {ip.mviMl > 0 && <div style={{ padding: "6px 10px", background: T.accentDim, borderRadius: 8, fontSize: 10, color: T.t3, marginBottom: 6 }}>
+        MVI contributes: VitA {r1(ip.mviMl * ip.mviVitaPerMl)} IU · VitD {r1(ip.mviMl * ip.mviVitdPerMl)} IU · VitC {r1(ip.mviMl * ip.mviVitcPerMl)} mg · VitE {r1(ip.mviMl * ip.mviVitePerMl)} IU · Zn {r1(ip.mviMl * ip.mviZnPerMl)} mg
+      </div>}
     </Sec>
 
     <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
