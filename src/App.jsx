@@ -36,6 +36,16 @@ async function supabaseLoadProfile() {
   return null;
 }
 
+async function supabaseLoginByEmail(email) {
+  try {
+    const res = await fetch("/api/profile?email=" + encodeURIComponent(email));
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (rows && rows.length > 0) return rows[0];
+  } catch (e) { console.warn("Email login failed:", e); }
+  return null;
+}
+
 // ━━━ Calculation Engine ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function calculateTPN(inputs) {
   const {
@@ -1359,6 +1369,9 @@ function Onboarding({ T, onDone }) {
   const [f, setF] = useState({ name: "", sex: "", email: "", mobile: "", designation: "", unit: "NICU", hospital: "", city: "", country: "India" });
   const [cq, setCq] = useState(""); const [cOpen, setCOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const [loginMode, setLoginMode] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginStatus, setLoginStatus] = useState("idle");
   const s = k => v => setF(p => ({ ...p, [k]: v }));
   const inp = { width: "100%", height: 42, padding: "0 12px", fontSize: 14, fontWeight: 600, background: T.inp, border: "1.5px solid " + T.inpBorder, borderRadius: 10, color: T.t1, outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
   const sel = { ...inp, cursor: "pointer", WebkitAppearance: "none", appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
@@ -1366,6 +1379,7 @@ function Onboarding({ T, onDone }) {
   const filteredCountries = cq.length > 0 ? COUNTRIES.filter(c => c.toLowerCase().startsWith(cq.toLowerCase())).slice(0, 6) : [];
   const canStep1 = f.name.trim() && f.email.includes("@");
   const canStep2 = f.hospital.trim() && f.city.trim();
+  const loginValid = loginEmail.includes("@") && loginEmail.includes(".");
 
   const doSave = async () => {
     await storeSet("user_profile", JSON.stringify(f));
@@ -1373,55 +1387,107 @@ function Onboarding({ T, onDone }) {
     onDone(f);
   };
 
+  const doEmailLogin = async () => {
+    if (!loginValid) return;
+    setLoginStatus("loading");
+    try {
+      const profile = await supabaseLoginByEmail(loginEmail.trim().toLowerCase());
+      if (profile && profile.name && profile.email) {
+        await storeSet("user_profile", JSON.stringify(profile));
+        supabaseUpsertProfile(profile); // re-link this device
+        onDone(profile);
+      } else {
+        setLoginStatus("notfound");
+      }
+    } catch {
+      setLoginStatus("error");
+    }
+  };
+
   return <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
     <div style={{ width: "100%", maxWidth: 380 }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <Logo T={T} width={200} />
-        <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: T.t1 }}>Welcome!</h1>
-        <p style={{ margin: 0, fontSize: 13, color: T.t3 }}>Set up your profile to get started</p>
+        {loginMode
+          ? <><h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: T.t1 }}>Welcome back!</h1><p style={{ margin: 0, fontSize: 13, color: T.t3 }}>Enter your registered email to continue</p></>
+          : <><h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: T.t1 }}>Welcome!</h1><p style={{ margin: 0, fontSize: 13, color: T.t3 }}>Set up your profile to get started</p></>}
       </div>
 
-      {/* Progress */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-        {[1, 2].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: step >= i ? T.accent : T.inpBorder, transition: "background .3s" }} />)}
-      </div>
-
-      <div style={{ background: T.card, borderRadius: 14, padding: 20, border: "1px solid " + T.border, boxShadow: T.shadow }}>
-        {step === 1 && <>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.t1, marginBottom: 14 }}>About You</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginBottom: 12 }}>
-            <div><label style={lbl}>Name <span style={{ color: T.red }}>*</span></label><input value={f.name} onChange={e => s("name")(e.target.value)} placeholder="Full name" style={inp} /></div>
-            <div style={{ width: 100 }}><label style={lbl}>Sex</label><select value={f.sex} onChange={e => s("sex")(e.target.value)} style={sel}><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
-          </div>
-          <div style={{ marginBottom: 12 }}><label style={lbl}>Email <span style={{ color: T.red }}>*</span></label><input type="email" value={f.email} onChange={e => s("email")(e.target.value)} placeholder="your@email.com" style={{ ...inp, borderColor: f.email && !f.email.includes("@") ? T.red + "66" : T.inpBorder }} /></div>
-          <div style={{ marginBottom: 12 }}><label style={lbl}>Mobile <span style={{ fontSize: 9, color: T.t3, fontWeight: 400 }}>(optional)</span></label><input type="tel" value={f.mobile} onChange={e => s("mobile")(e.target.value.replace(/[^\d+\- ]/g, ""))} placeholder="+91..." style={inp} /></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-            <div><label style={lbl}>Designation</label><select value={f.designation} onChange={e => s("designation")(e.target.value)} style={sel}><option value="">Select...</option>{DESIG.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
-            <div><label style={lbl}>Unit</label><select value={f.unit} onChange={e => s("unit")(e.target.value)} style={sel}>{UNITS.map(u => <option key={u} value={u}>{u}</option>)}</select></div>
-          </div>
-          <button onClick={() => setStep(2)} disabled={!canStep1} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: canStep1 ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canStep1 ? "pointer" : "not-allowed" }}>Next</button>
-        </>}
-
-        {step === 2 && <>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.t1, marginBottom: 14 }}>Your Workplace</div>
-          <div style={{ marginBottom: 12 }}><label style={lbl}>Hospital <span style={{ color: T.red }}>*</span></label><input value={f.hospital} onChange={e => s("hospital")(e.target.value)} placeholder="Hospital name" style={inp} /></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-            <div><label style={lbl}>City <span style={{ color: T.red }}>*</span></label><input value={f.city} onChange={e => s("city")(e.target.value)} placeholder="City" style={inp} /></div>
-            <div style={{ position: "relative" }}><label style={lbl}>Country</label><input value={cOpen ? cq : f.country} onChange={e => { setCq(e.target.value); setCOpen(true); if (!e.target.value) s("country")("") }} onFocus={() => { setCq(""); setCOpen(true) }} onBlur={() => setTimeout(() => setCOpen(false), 150)} placeholder="Type..." style={inp} />
-              {cOpen && filteredCountries.length > 0 && <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: T.card, border: "1.5px solid " + T.accent + "44", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,.15)", maxHeight: 160, overflowY: "auto", marginTop: 2 }}>
-                {filteredCountries.map(c => <div key={c} onMouseDown={() => { s("country")(c); setCq(c); setCOpen(false) }} style={{ padding: "8px 10px", fontSize: 12, color: T.t1, cursor: "pointer", borderBottom: "1px solid " + T.border + "44" }} onMouseEnter={e => e.currentTarget.style.background = T.accentDim} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>{c}</div>)}
-              </div>}
+      {!loginMode && <>
+        <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+          {[1, 2].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: step >= i ? T.accent : T.inpBorder, transition: "background .3s" }} />)}
+        </div>
+        <div style={{ background: T.card, borderRadius: 14, padding: 20, border: "1px solid " + T.border, boxShadow: T.shadow }}>
+          {step === 1 && <>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.t1, marginBottom: 14 }}>About You</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginBottom: 12 }}>
+              <div><label style={lbl}>Name <span style={{ color: T.red }}>*</span></label><input value={f.name} onChange={e => s("name")(e.target.value)} placeholder="Full name" style={inp} /></div>
+              <div style={{ width: 100 }}><label style={lbl}>Sex</label><select value={f.sex} onChange={e => s("sex")(e.target.value)} style={sel}><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
             </div>
+            <div style={{ marginBottom: 12 }}><label style={lbl}>Email <span style={{ color: T.red }}>*</span></label><input type="email" value={f.email} onChange={e => s("email")(e.target.value)} placeholder="your@email.com" style={{ ...inp, borderColor: f.email && !f.email.includes("@") ? T.red + "66" : T.inpBorder }} /></div>
+            <div style={{ marginBottom: 12 }}><label style={lbl}>Mobile <span style={{ fontSize: 9, color: T.t3, fontWeight: 400 }}>(optional)</span></label><input type="tel" value={f.mobile} onChange={e => s("mobile")(e.target.value.replace(/[^\d+\- ]/g, ""))} placeholder="+91..." style={inp} /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <div><label style={lbl}>Designation</label><select value={f.designation} onChange={e => s("designation")(e.target.value)} style={sel}><option value="">Select...</option>{DESIG.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+              <div><label style={lbl}>Unit</label><select value={f.unit} onChange={e => s("unit")(e.target.value)} style={sel}>{UNITS.map(u => <option key={u} value={u}>{u}</option>)}</select></div>
+            </div>
+            <button onClick={() => setStep(2)} disabled={!canStep1} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: canStep1 ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canStep1 ? "pointer" : "not-allowed" }}>Next</button>
+          </>}
+          {step === 2 && <>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.t1, marginBottom: 14 }}>Your Workplace</div>
+            <div style={{ marginBottom: 12 }}><label style={lbl}>Hospital <span style={{ color: T.red }}>*</span></label><input value={f.hospital} onChange={e => s("hospital")(e.target.value)} placeholder="Hospital name" style={inp} /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <div><label style={lbl}>City <span style={{ color: T.red }}>*</span></label><input value={f.city} onChange={e => s("city")(e.target.value)} placeholder="City" style={inp} /></div>
+              <div style={{ position: "relative" }}><label style={lbl}>Country</label><input value={cOpen ? cq : f.country} onChange={e => { setCq(e.target.value); setCOpen(true); if (!e.target.value) s("country")("") }} onFocus={() => { setCq(""); setCOpen(true) }} onBlur={() => setTimeout(() => setCOpen(false), 150)} placeholder="Type..." style={inp} />
+                {cOpen && filteredCountries.length > 0 && <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: T.card, border: "1.5px solid " + T.accent + "44", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,.15)", maxHeight: 160, overflowY: "auto", marginTop: 2 }}>
+                  {filteredCountries.map(c => <div key={c} onMouseDown={() => { s("country")(c); setCq(c); setCOpen(false) }} style={{ padding: "8px 10px", fontSize: 12, color: T.t1, cursor: "pointer", borderBottom: "1px solid " + T.border + "44" }} onMouseEnter={e => e.currentTarget.style.background = T.accentDim} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>{c}</div>)}
+                </div>}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setStep(1)} style={{ padding: "14px 20px", fontSize: 14, fontWeight: 600, background: T.card, color: T.t2, border: "1px solid " + T.border, borderRadius: 10, cursor: "pointer" }}>Back</button>
+              <button onClick={doSave} disabled={!canStep2} style={{ flex: 1, padding: 14, fontSize: 15, fontWeight: 700, background: canStep2 ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canStep2 ? "pointer" : "not-allowed" }}>Get Started</button>
+            </div>
+          </>}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 18 }}>
+          <button onClick={() => { setLoginMode(true); setLoginStatus("idle"); setLoginEmail(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: T.accent, fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", padding: 4 }}>
+            Already registered? Login here
+          </button>
+        </div>
+      </>}
+
+      {loginMode && <div style={{ background: T.card, borderRadius: 14, padding: 24, border: "1px solid " + T.border, boxShadow: T.shadow }}>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.accentDim, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={T.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setStep(1)} style={{ padding: "14px 20px", fontSize: 14, fontWeight: 600, background: T.card, color: T.t2, border: "1px solid " + T.border, borderRadius: 10, cursor: "pointer" }}>Back</button>
-            <button onClick={doSave} disabled={!canStep2} style={{ flex: 1, padding: 14, fontSize: 15, fontWeight: 700, background: canStep2 ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: canStep2 ? "pointer" : "not-allowed" }}>Get Started</button>
-          </div>
-        </>}
-      </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.t1, marginBottom: 4 }}>Quick Login</div>
+          <div style={{ fontSize: 12, color: T.t3 }}>We'll fetch your saved profile instantly</div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={lbl}>Registered Email <span style={{ color: T.red }}>*</span></label>
+          <input type="email" value={loginEmail} onChange={e => { setLoginEmail(e.target.value); setLoginStatus("idle"); }} onKeyDown={e => { if (e.key === "Enter" && loginValid && loginStatus !== "loading") doEmailLogin(); }} placeholder="your@email.com" autoFocus style={{ ...inp, borderColor: loginStatus === "notfound" || loginStatus === "error" ? T.red + "99" : T.inpBorder }} />
+        </div>
+        {loginStatus === "notfound" && <div style={{ marginBottom: 14, padding: "10px 12px", background: T.red + "15", border: "1px solid " + T.red + "44", borderRadius: 8, fontSize: 12, color: T.red, fontWeight: 600 }}>
+          No profile found for this email. Please check the email or create a new profile below.
+        </div>}
+        {loginStatus === "error" && <div style={{ marginBottom: 14, padding: "10px 12px", background: T.red + "15", border: "1px solid " + T.red + "44", borderRadius: 8, fontSize: 12, color: T.red, fontWeight: 600 }}>
+          Could not connect. Please check your internet and try again.
+        </div>}
+        <button onClick={doEmailLogin} disabled={!loginValid || loginStatus === "loading"} style={{ width: "100%", padding: 14, fontSize: 15, fontWeight: 700, background: loginValid && loginStatus !== "loading" ? T.btnGrad : T.inpBorder, color: "#fff", border: "none", borderRadius: 10, cursor: loginValid && loginStatus !== "loading" ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          {loginStatus === "loading" ? <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Looking up profile…</> : "Login →"}
+        </button>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button onClick={() => { setLoginMode(false); setLoginStatus("idle"); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: T.t3, fontWeight: 600, fontFamily: "inherit", padding: 4 }}>
+            ← New here? Create a profile
+          </button>
+        </div>
+      </div>}
     </div>
+    <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
   </div>;
 }
+
 
 // ━━━ MAIN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export default function App() {
