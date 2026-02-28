@@ -776,7 +776,7 @@ const PTF_PRENAN = {
   ca: 6.1,         // mg/g
   po4: 3.05,       // mg/g
   fe: 0.09,        // mg/g
-  vitd: 6.0,       // IU/g (perDay nutrient — total IU per gram PTF)
+  vitd: 6.0,       // IU/g — divided by wt (kg) to give IU/kg/d
   na: 0.0957,      // mEq/g (2.2 mg/g ÷ 23)
   k: 0.1279,       // mEq/g (5.0 mg/g ÷ 39.1)
   mg: 0.37,        // mg/g
@@ -793,28 +793,28 @@ const PTF_PRENAN = {
   pyri: 0.005,     // mg/g
 };
 const NUTRIENTS = [
-  { k: "energy", n: "Energy", u: "kcal/kg", bm: 67, fm: 78, hm: 4, aap: [105, 130], esp: [110, 135] },
-  { k: "protein", n: "Protein", u: "g/kg", bm: 1.1, fm: 1.9, hm: 0.3, aap: [3.5, 4.0], esp: [3.5, 4.0] },
-  { k: "fat", n: "Fat", u: "g/kg", bm: 3.6, fm: 3.8, hm: 0.1, aap: [5.0, 7.0], esp: [4.8, 6.6] },
-  { k: "carb", n: "Carbohydrate", u: "g/kg", bm: 6.7, fm: 8.1, hm: 0.4, aap: [10.0, 14], esp: [11.6, 13.2] },
-  { k: "ca", n: "Calcium", u: "mg/kg/d", bm: 26, fm: 95, hm: 15.93, aap: [200, 210], esp: [120, 140], sup: true },
-  { k: "po4", n: "Phosphorus", u: "mg/kg/d", bm: 13, fm: 48, hm: 8.76, aap: [100, 110], esp: [60, 90], sup: true },
+  { k: "energy", n: "Energy", u: "kcal/kg", bm: 67, fm: 78, hm: 4, aap: [105, 130], esp: [115, 140] },
+  { k: "protein", n: "Protein", u: "g/kg", bm: 1.1, fm: 1.9, hm: 0.3, aap: [3.5, 4.0], esp: [3.5, 4.5] },
+  { k: "fat", n: "Fat", u: "g/kg", bm: 3.6, fm: 3.8, hm: 0.1, aap: [5.0, 7.0], esp: [4.8, 8.1] },
+  { k: "carb", n: "Carbohydrate", u: "g/kg", bm: 6.7, fm: 8.1, hm: 0.4, aap: [10.0, 14], esp: [11.0, 15.0] },
+  { k: "ca", n: "Calcium", u: "mg/kg/d", bm: 26, fm: 95, hm: 15.93, aap: [200, 210], esp: [120, 200], sup: true },
+  { k: "po4", n: "Phosphorus", u: "mg/kg/d", bm: 13, fm: 48, hm: 8.76, aap: [100, 110], esp: [60, 115], sup: true },
   { k: "fe", n: "Iron", u: "mg/kg/d", bm: 0.12, fm: 1.67, hm: 0.36, aap: [2.0, 3.0], esp: [2.0, 3.0], sup: true },
-  { k: "vitd", n: "Vitamin D", u: "IU/d", bm: 2, fm: 160, hm: 28, aap: [400, 400], esp: [800, 1000], perDay: true },
-  { k: "na", n: "Sodium", u: "mEq/kg/d", bm: 1.4, fm: 1.03, hm: 0.32, aap: [2.0, 3.0], esp: [3.0, 5.0] },
-  { k: "k", n: "Potassium", u: "mEq/kg/d", bm: 2.4, fm: 0.74, hm: 0.25, aap: [1.7, 2.5], esp: [3.0, 5.0] },
-  { k: "mg", n: "Magnesium", u: "mg/kg/d", bm: 3, fm: 3.7, hm: 0.8, esp: [8.0, 15.0] },
-  { k: "zn", n: "Zinc", u: "mg/kg/d", bm: 0.33, fm: 0.28, hm: 0.19, aap: [0.6, 1.0], esp: [1.1, 2.0] },
+  { k: "vitd", n: "Vitamin D", u: "IU/kg/d", bm: 2, fm: 160, hm: 28, aap: [400, 400], esp: [400, 700] },
+  { k: "na", n: "Sodium", u: "mEq/kg/d", bm: 1.4, fm: 1.03, hm: 0.32, aap: [2.0, 3.0], esp: [3.0, 8.0] },
+  { k: "k", n: "Potassium", u: "mEq/kg/d", bm: 2.4, fm: 0.74, hm: 0.25, aap: [1.7, 2.5], esp: [2.0, 5.0] },
+  { k: "mg", n: "Magnesium", u: "mg/kg/d", bm: 3, fm: 3.7, hm: 0.8, esp: [9.0, 12.5] },
+  { k: "zn", n: "Zinc", u: "mg/kg/d", bm: 0.33, fm: 0.28, hm: 0.19, aap: [0.6, 1.0], esp: [2.0, 3.0] },
   { k: "vita", n: "Vitamin A", u: "IU/kg/d", bm: 50, fm: 505, hm: 221.6, aap: [92, 270], esp: [1330, 3300] },
   { k: "vite", n: "Vitamin E", u: "IU/kg/d", bm: 1.5, fm: 1.11, hm: 1.12, aap: [1.3, 1.3], esp: [2.2, 11] },
   { k: "vitk", n: "Vitamin K", u: "mcg/kg/d", bm: 0.2, fm: 6.67, hm: 1.5, aap: [4.8, 4.8], esp: [4.4, 28] },
   { k: "vitc", n: "Vitamin C", u: "mg/kg/d", bm: 10.6, fm: 6.67, hm: 3.75, aap: [42, 42], esp: [11, 46] },
   { k: "folic", n: "Folic acid", u: "mcg/kg/d", bm: 3.3, fm: 16.7, hm: 7.5, aap: [40, 40], esp: [35, 100] },
-  { k: "cu", n: "Copper", u: "mcg/kg/d", bm: 73, fm: 35.6, hm: 10, aap: [100, 108], esp: [100, 132] },
-  { k: "thia", n: "Thiamine (B1)", u: "mg/kg/d", bm: 0.016, fm: 0.1, hm: 0.02, esp: [0.2, 0.3] },
-  { k: "ribo", n: "Riboflavin (B2)", u: "mg/kg/d", bm: 0.037, fm: 0.1, hm: 0.03, esp: [0.3, 0.4] },
+  { k: "cu", n: "Copper", u: "mcg/kg/d", bm: 73, fm: 35.6, hm: 10, aap: [100, 108], esp: [120, 230] },
+  { k: "thia", n: "Thiamine (B1)", u: "mg/kg/d", bm: 0.016, fm: 0.1, hm: 0.02, esp: [0.14, 0.29] },
+  { k: "ribo", n: "Riboflavin (B2)", u: "mg/kg/d", bm: 0.037, fm: 0.1, hm: 0.03, esp: [0.2, 0.43] },
   { k: "nica", n: "Nicotinamide (B3)", u: "mg/kg/d", bm: 0.17, fm: 0.68, hm: 0.05, esp: [3.6, 4.8] },
-  { k: "pyri", n: "Pyridoxine (B6)", u: "mg/kg/d", bm: 0.011, fm: 0.063, hm: 0.02, esp: [0.045, 0.3] },
+  { k: "pyri", n: "Pyridoxine (B6)", u: "mg/kg/d", bm: 0.011, fm: 0.063, hm: 0.02, esp: [0.07, 0.29] },
 ];
 function mergeNutDB(overrides) {
   if (!overrides) return NUTRIENTS;
@@ -1139,23 +1139,23 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       {/* Deficiency Advisory */}
       {(() => {
         const ADVICE = {
-          energy:  { label: "Energy", icon: "⚡", tips: ["Increase total feed volume (if tolerated)", "Switch EBM to formula or use mixed feeds for higher caloric density", "Increase HMF/PTF dose (check for tolerance)", "Consider concentrated formula if fluid-restricted"] },
+          energy: { label: "Energy", icon: "⚡", tips: ["Increase total feed volume (if tolerated)", "Switch EBM to formula or use mixed feeds for higher caloric density", "Increase HMF/PTF dose (check for tolerance)", "Consider concentrated formula if fluid-restricted"] },
           protein: { label: "Protein", icon: "🧬", tips: ["Increase HMF/PTF — each gram adds ~0.3 g protein", "Switch to a higher-protein formula", "Check HMF mixing accuracy (per feed vs per day entry)"] },
-          fat:     { label: "Fat", icon: "🔸", tips: ["Add MCT oil supplement if clinically indicated", "Increase feed volume to boost fat intake from EBM/formula", "Reduce HMF if it is diluting fat-dense EBM"] },
-          ca:      { label: "Calcium", icon: "🦴", tips: ["Increase Ca/P syrup dose", "Increase HMF — significant source of calcium", "Consider higher-concentration Ca/P preparation", "Ensure Ca supplement is given separately from iron"] },
-          po4:     { label: "Phosphorus", icon: "🔬", tips: ["Increase Ca/P syrup dose (phosphorus rises with calcium)", "Increase HMF/PTF dose", "Add separate phosphate supplement if Ca:P ratio is already adequate"] },
-          fe:      { label: "Iron", icon: "🔴", tips: ["Increase iron syrup dose (target 2–3 mg/kg/d elemental iron)", "Check iron concentration of current preparation", "Start iron if not already given (typically from 2–4 weeks of age)", "Give iron 2 hours apart from Ca/P supplement"] },
-          vitd:    { label: "Vitamin D", icon: "☀️", tips: ["Increase Vitamin D supplement dose (target 400–1000 IU/d)", "MVI provides some Vitamin D — ensure MVI is being given", "AAP recommends 400 IU/d minimum; ESPGHAN up to 1000 IU/d"] },
-          vita:    { label: "Vitamin A", icon: "🟠", tips: ["Start or increase MVI dose", "Vitamin A is predominantly MVI-sourced in preterm infants", "Consider dedicated Vitamin A supplementation if very deficient"] },
-          vitc:    { label: "Vitamin C", icon: "🍊", tips: ["Ensure MVI is given daily", "Increase MVI dose if not at recommended level", "Formula typically provides more Vit C than EBM"] },
-          vite:    { label: "Vitamin E", icon: "🌿", tips: ["Ensure MVI is given daily", "Increase MVI dose", "Vit E absorption improves with adequate fat intake"] },
-          zn:      { label: "Zinc", icon: "⚙️", tips: ["Ensure MVI is given (Zinc is MVI-sourced)", "Increase MVI dose if tolerated", "Consider dedicated zinc supplement in very preterm infants with EBM-only feeds"] },
-          ribo:    { label: "Riboflavin (B2)", icon: "💛", tips: ["Start or increase MVI dose (key source of B2)", "Phototherapy degrades riboflavin — ensure MVI is given during phototherapy", "Protect MVI from light during administration"] },
-          nica:    { label: "Nicotinamide (B3)", icon: "🟡", tips: ["Start or increase MVI dose (main source of B3 in preterm infants)", "Increasing formula volume also improves B3 intake", "Exclusively EBM-fed infants are particularly at risk — prioritise MVI"] },
-          pyri:    { label: "Pyridoxine (B6)", icon: "🟤", tips: ["Start or increase MVI dose (primary B6 source)", "Formula provides more B6 than EBM", "B6 deficiency can cause seizures — ensure MVI is never omitted"] },
-          thia:    { label: "Thiamine (B1)", icon: "🔶", tips: ["Start or increase MVI dose immediately (B1 is MVI-sourced)", "Thiamine deficiency can cause lactic acidosis and cardiac failure — treat urgently", "Exclusively formula-fed infants get more B1 than EBM-fed; prioritise MVI in EBM-fed preterms", "Ensure MVI is never omitted in infants on prolonged parenteral nutrition"] },
-          na:      { label: "Sodium", icon: "🧂", tips: ["Increase NaCl supplementation (sodium deficit is common in VLBW infants)", "Check serum sodium before adjusting", "Target 3–5 mEq/kg/d in ESPGHAN guidelines for preterms"] },
-          mg:      { label: "Magnesium", icon: "🔷", tips: ["Increase feed volume", "Check if formula has adequate Mg content", "HMF provides minimal Mg — formula feeds preferable if deficient"] },
+          fat: { label: "Fat", icon: "🔸", tips: ["Add MCT oil supplement if clinically indicated", "Increase feed volume to boost fat intake from EBM/formula", "Reduce HMF if it is diluting fat-dense EBM"] },
+          ca: { label: "Calcium", icon: "🦴", tips: ["Increase Ca/P syrup dose", "Increase HMF — significant source of calcium", "Consider higher-concentration Ca/P preparation", "Ensure Ca supplement is given separately from iron"] },
+          po4: { label: "Phosphorus", icon: "🔬", tips: ["Increase Ca/P syrup dose (phosphorus rises with calcium)", "Increase HMF/PTF dose", "Add separate phosphate supplement if Ca:P ratio is already adequate"] },
+          fe: { label: "Iron", icon: "🔴", tips: ["Increase iron syrup dose (target 2–3 mg/kg/d elemental iron)", "Check iron concentration of current preparation", "Start iron if not already given (typically from 2–4 weeks of age)", "Give iron 2 hours apart from Ca/P supplement"] },
+          vitd: { label: "Vitamin D", icon: "☀️", tips: ["Increase Vitamin D supplement dose (ESPGHAN target 400–700 IU/kg/d)", "MVI provides some Vitamin D — ensure MVI is being given", "Typical prescription: 400–800 IU/day total regardless of weight"] },
+          vita: { label: "Vitamin A", icon: "🟠", tips: ["Start or increase MVI dose", "Vitamin A is predominantly MVI-sourced in preterm infants", "Consider dedicated Vitamin A supplementation if very deficient"] },
+          vitc: { label: "Vitamin C", icon: "🍊", tips: ["Ensure MVI is given daily", "Increase MVI dose if not at recommended level", "Formula typically provides more Vit C than EBM"] },
+          vite: { label: "Vitamin E", icon: "🌿", tips: ["Ensure MVI is given daily", "Increase MVI dose", "Vit E absorption improves with adequate fat intake"] },
+          zn: { label: "Zinc", icon: "⚙️", tips: ["Ensure MVI is given (Zinc is MVI-sourced)", "Increase MVI dose if tolerated", "Consider dedicated zinc supplement in very preterm infants with EBM-only feeds"] },
+          ribo: { label: "Riboflavin (B2)", icon: "💛", tips: ["Start or increase MVI dose (key source of B2)", "Phototherapy degrades riboflavin — ensure MVI is given during phototherapy", "Protect MVI from light during administration"] },
+          nica: { label: "Nicotinamide (B3)", icon: "🟡", tips: ["Start or increase MVI dose (main source of B3 in preterm infants)", "Increasing formula volume also improves B3 intake", "Exclusively EBM-fed infants are particularly at risk — prioritise MVI"] },
+          pyri: { label: "Pyridoxine (B6)", icon: "🟤", tips: ["Start or increase MVI dose (primary B6 source)", "Formula provides more B6 than EBM", "B6 deficiency can cause seizures — ensure MVI is never omitted"] },
+          thia: { label: "Thiamine (B1)", icon: "🔶", tips: ["Start or increase MVI dose immediately (B1 is MVI-sourced)", "Thiamine deficiency can cause lactic acidosis and cardiac failure — treat urgently", "Exclusively formula-fed infants get more B1 than EBM-fed; prioritise MVI in EBM-fed preterms", "Ensure MVI is never omitted in infants on prolonged parenteral nutrition"] },
+          na: { label: "Sodium", icon: "🧂", tips: ["Increase NaCl supplementation (sodium deficit is common in VLBW infants)", "Check serum sodium before adjusting", "Target 3–5 mEq/kg/d in ESPGHAN guidelines for preterms"] },
+          mg: { label: "Magnesium", icon: "🔷", tips: ["Increase feed volume", "Check if formula has adequate Mg content", "HMF provides minimal Mg — formula feeds preferable if deficient"] },
         };
         const grosslyLow = res.rows.filter(r => {
           if (!r.esp || r.esp[0] === 0) return false;
