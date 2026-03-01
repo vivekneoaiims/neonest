@@ -518,7 +518,7 @@ function printTPN(ip, res) {
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>TPN Order – B/O ${ip.babyOf || ""}</title>
+<title>TPN Order – B/o ${ip.babyOf || ""}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, sans-serif; font-size: 10.5pt; color: #000; padding: 10mm 12mm; }
@@ -540,7 +540,7 @@ function printTPN(ip, res) {
   table.sum td { border: 1px solid #aaa; padding: 3px 6px; vertical-align: top; }
   table.sum td.sl { background: #f0f0f0; font-weight: bold; width: 56%; white-space: nowrap; }
   table.sum td.sv { text-align: right; }
-  table.sum tr.sec td { background: #d8e8f8; font-weight: bold; font-size: 9pt; padding: 2px 6px; }
+  table.sum tr.sec td { background: #e0e0e0; font-weight: bold; font-size: 9pt; padding: 2px 6px; }
   table.sum .sub { font-size: 8.5pt; color: #444; font-weight: normal; padding-left: 4px; }
   table.sum .unit { font-size: 8pt; font-weight: normal; color: #555; }
   /* Syringe inner table */
@@ -566,7 +566,7 @@ function printTPN(ip, res) {
 <h2 style="font-size:12pt;margin-top:-4px;margin-bottom:8px;">Treatment Chart</h2>
 
 <div class="hdr">
-  <div class="hdr-cell"><b>Name:</b> B/O ${ip.babyOf ? ip.babyOf : blank(18)}</div>
+  <div class="hdr-cell"><b>Name:</b> B/o ${ip.babyOf ? ip.babyOf : blank(18)}</div>
   <div class="hdr-cell"><b>Patient ID:</b> ${ip.patientId || blank(14)}</div>
   <div class="hdr-cell"><b>Date:</b> ${formatDate(ip.date)}</div>
 </div>
@@ -581,11 +581,11 @@ function printTPN(ip, res) {
 
     <div class="clinical">
       <div class="sub-lbl" style="margin-top:0;">Feeds:</div>
-      <div style="margin-bottom:4px;">
-        ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; every ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
+      <div style="margin-bottom:4px;font-size:9.5pt;white-space:nowrap;">
+        ${blank(3)} feeds &nbsp;(EBM/PDHM)&nbsp; ${blank(3)} mL &nbsp; every ${blank(3)} hourly &nbsp; for ${blank(3)} feeds
       </div>
 
-      <div class="sub-lbl">Parenteral Nutrition:</div>
+      <div class="sub-lbl" style="margin-top:14px;">Parenteral Nutrition:</div>
 
       ${rv(res.s1.total) > 0 ? `<div style="margin-bottom:6px;">
         <b>Syringe 1</b><br>
@@ -595,7 +595,7 @@ function printTPN(ip, res) {
       <table class="syr">
         <tr>
           <th style="text-align:left;">Syringe 2</th>
-          <th class="rc"></th>
+          <th class="rc">Volume</th>
           <th class="rc">${col2Lbl}</th>
         </tr>
         ${syrTableRows(res.s2.items)}
@@ -610,7 +610,7 @@ function printTPN(ip, res) {
       <table class="syr">
         <tr>
           <th style="text-align:left;">Syringe 3</th>
-          <th class="rc"></th>
+          <th class="rc">Volume</th>
           <th class="rc">${col2Lbl}</th>
         </tr>
         ${syrTableRows(res.s3.items)}
@@ -622,13 +622,13 @@ function printTPN(ip, res) {
       </table>` : ""}
 
       ${caSyrNum != null ? `
-      <div style="margin-bottom:12px;">
+      <div style="margin-bottom:16px;">
         <b>Syringe ${caSyrNum}: (Calcium)</b><br>
         Inj. 10% Calcium Gluconate &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
       </div>` : ""}
 
       ${ppSyrNum != null ? `
-      <div style="margin-bottom:12px;">
+      <div style="margin-bottom:16px;">
         <b>Syringe ${ppSyrNum}: (Phosphorus)</b><br>
         Inj. Potassium Phosphate (Potphos) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
       </div>` : ""}
@@ -636,8 +636,6 @@ function printTPN(ip, res) {
 
     <div class="sub-lbl" style="margin-top:4px;">Medications:</div>
     <div style="margin-top:4px;">1.</div>
-
-    <div class="sign">SR SIGN: &nbsp;<span></span></div>
   </div>
 
   <!-- RIGHT: Summary table -->
