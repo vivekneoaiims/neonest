@@ -535,8 +535,6 @@ function printTPN(ip, res) {
   .col-side { width: 210px; flex-shrink: 0; }
   /* Respiratory support box */
   .resp-box { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 6px; }
-  /* Feeds section (no box) */
-  .feeds-section { padding: 2px 0; margin-bottom: 2px; }
   /* Summary (side) table */
   table.sum { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5pt; }
   table.sum td { border: 1px solid #aaa; padding: 3px 6px; vertical-align: top; }
@@ -555,12 +553,10 @@ function printTPN(ip, res) {
   .clinical { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 6px; }
   .sub-lbl { font-weight: bold; margin-top: 7px; margin-bottom: 3px; font-size: 10pt; }
   .sub-lbl:first-child { margin-top: 0; }
-  .blank-line { border-bottom: 1px solid #555; margin: 3px 0 7px; min-height: 17px; }
-  /* Meds (no box) */
-  .meds-row { border-bottom: 1px solid #aaa; min-height: 19px; margin-bottom: 5px; padding-bottom: 2px; }
-  /* Sign – pushed to bottom */
-  .sign { margin-top: auto; padding-top: 20px; text-align: right; font-weight: bold; font-size: 11pt; }
-  .sign span { display: inline-block; border-bottom: 1.5px solid #000; min-width: 180px; padding-bottom: 2px; }
+  /* Meds */
+  /* Sign – centered at bottom of column */
+  .sign { margin-top: auto; padding-top: 24px; text-align: center; font-weight: bold; font-size: 11pt; }
+  .sign span { display: inline-block; border-bottom: 1.5px solid #000; min-width: 200px; padding-bottom: 2px; }
   @media print { body { padding: 7mm 9mm; } @page { size: A4; margin: 7mm; } }
 </style>
 </head>
@@ -581,20 +577,15 @@ function printTPN(ip, res) {
   <div class="col-main">
     <div class="resp-box">
       <div class="sub-lbl" style="margin-top:0;">Respiratory Support:</div>
-      <div class="blank-line"></div>
     </div>
-
-    <div class="feeds-section">
-      <div class="sub-lbl">Feeds:</div>
-      <div style="margin-bottom:4px;">
-        ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; q ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
-      </div>
-    </div>
-
-    <div style="height:10px;"></div>
 
     <div class="clinical">
-      <div class="sub-lbl" style="margin-top:0;">Parenteral Nutrition:</div>
+      <div class="sub-lbl" style="margin-top:0;">Feeds:</div>
+      <div style="margin-bottom:4px;">
+        ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; every ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
+      </div>
+
+      <div class="sub-lbl">Parenteral Nutrition:</div>
 
       ${rv(res.s1.total) > 0 ? `<div style="margin-bottom:6px;">
         <b>Syringe 1</b><br>
@@ -604,14 +595,14 @@ function printTPN(ip, res) {
       <table class="syr">
         <tr>
           <th style="text-align:left;">Syringe 2</th>
-          <th class="rc">mL</th>
+          <th class="rc"></th>
           <th class="rc">${col2Lbl}</th>
         </tr>
         ${syrTableRows(res.s2.items)}
         <tr class="total">
           <td>Total</td>
-          <td class="rc">${fv(res.s2.total)}</td>
-          <td class="rc">${fv(res.s2.rate, 2)} mL/hr</td>
+          <td class="rc">${fv(res.s2.total)} mL</td>
+          <td class="rc">@ ${fv(res.s2.rate, 2)} mL/hr</td>
         </tr>
       </table>
 
@@ -619,32 +610,32 @@ function printTPN(ip, res) {
       <table class="syr">
         <tr>
           <th style="text-align:left;">Syringe 3</th>
-          <th class="rc">mL</th>
+          <th class="rc"></th>
           <th class="rc">${col2Lbl}</th>
         </tr>
         ${syrTableRows(res.s3.items)}
         <tr class="total">
           <td>Total</td>
-          <td class="rc">${fv(res.s3.total)}</td>
-          <td class="rc">${fv(res.s3.rate, 2)} mL/hr</td>
+          <td class="rc">${fv(res.s3.total)} mL</td>
+          <td class="rc">@ ${fv(res.s3.rate, 2)} mL/hr</td>
         </tr>
       </table>` : ""}
 
       ${caSyrNum != null ? `
-      <div style="margin-bottom:10px;">
+      <div style="margin-bottom:12px;">
         <b>Syringe ${caSyrNum}: (Calcium)</b><br>
         Inj. 10% Calcium Gluconate &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
       </div>` : ""}
 
       ${ppSyrNum != null ? `
-      <div style="margin-bottom:4px;">
+      <div style="margin-bottom:12px;">
         <b>Syringe ${ppSyrNum}: (Phosphorus)</b><br>
         Inj. Potassium Phosphate (Potphos) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
       </div>` : ""}
     </div>
 
-    <div class="sub-lbl" style="margin-top:8px;">Medications:</div>
-    <div class="meds-row">1.</div>
+    <div class="sub-lbl" style="margin-top:4px;">Medications:</div>
+    <div style="margin-top:4px;">1.</div>
 
     <div class="sign">SR SIGN: &nbsp;<span></span></div>
   </div>
@@ -688,7 +679,8 @@ function printTPN(ip, res) {
         <td class="sv"><b>${ip.potassium}</b></td>
       </tr>
 
-      <tr class="sec"><td colspan="2">Minerals</td></tr>
+      ${rv(ip.magnesium) > 0 ? `
+      <tr><td class="sl">Mg <span class="unit">mEq/kg/d</span></td><td class="sv"><b>${ip.magnesium}</b></td></tr>` : ""}
       <tr><td class="sl">Ca <span class="unit">mg/kg/d</span></td><td class="sv"><b>${ip.calcium}</b></td></tr>
       <tr><td class="sl">PO₄ <span class="unit">mg/kg/d</span></td><td class="sv"><b>${ip.po4}</b></td></tr>
 
