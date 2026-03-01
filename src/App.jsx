@@ -461,6 +461,22 @@ function printTPN(ip, res) {
   const isPerDay = res.isPerDay;
   const col2Lbl = isPerDay ? `Per ${res.overfill} mL` : "Per 50 mL";
 
+  // Hospital name from user profile
+  let hospitalName = "LHMC & Associated Hospitals";
+  try {
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
+    if (profile.hospital) hospitalName = profile.hospital;
+  } catch(e) {}
+
+  // Date formatting: yyyy-mm-dd → dd-mm-yyyy
+  const formatDate = (d) => {
+    if (!d) return blank(12);
+    const parts = d.split("-");
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return d;
+  };
+
+  // Syringe 1 – non-zero items only
   const lipidItem  = res.s1.items.find(i => i.l.includes("Lipid"));
   const mviItem    = res.s1.items.find(i => i.l === "MVI");
   const celcelItem = res.s1.items.find(i => i.l === "Celcel");
@@ -476,14 +492,27 @@ function printTPN(ip, res) {
     return item.p50 != null ? fv(item.p50) : "&mdash;";
   };
 
-  const syrTableRows = (items) => items.map(item =>
-    `<tr><td>${item.l}</td><td class="rc">${fv(item.v)}</td><td class="rc">${col2Val(item)}</td></tr>`
-  ).join("");
+  // Rename labels for print + filter zeros
+  const fixLabel = (l) => {
+    if (l === "KPO\u2084") return "Potassium PO\u2084";
+    return l;
+  };
+  const syrTableRows = (items) => items
+    .filter(item => rv(item.v) > 0)
+    .map(item =>
+      `<tr><td>${fixLabel(item.l)}</td><td class="rc">${fv(item.v)}</td><td class="rc">${col2Val(item)}</td></tr>`
+    ).join("");
 
   // Syringe numbering for separate infusions
   let nextSyr = res.s3 ? 4 : 3;
   const caSyrNum  = rv(res.sep.ca) > 0 ? nextSyr++ : null;
   const ppSyrNum  = rv(res.sep.pp) > 0 ? nextSyr++ : null;
+
+  // Na / K breakdown
+  const naTotal  = rv(res.mon.naIVM) > 0 ? rv(res.mon.naIVM) : 0;
+  const naTPN    = rv(ip.sodium - naTotal) > 0 ? rv(ip.sodium - naTotal) : 0;
+  const kPPval   = rv(res.mon.kPP) > 0 ? rv(res.mon.kPP) : 0;
+  const kIVM     = rv(ip.potassium - kPPval) > 0 ? rv(ip.potassium - kPPval) : 0;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -492,139 +521,184 @@ function printTPN(ip, res) {
 <title>TPN Order – B/O ${ip.babyOf || ""}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; padding: 14mm 16mm; }
-  h2  { font-size: 13pt; text-align: center; margin-bottom: 8px; letter-spacing: .5px; }
-  h3  { font-size: 11pt; margin-bottom: 4px; }
+  body { font-family: Arial, sans-serif; font-size: 10.5pt; color: #000; padding: 10mm 12mm; }
+  h1  { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 2px; letter-spacing: .3px; }
+  h2  { font-size: 11pt; font-weight: bold; text-align: center; margin-bottom: 8px; letter-spacing: .5px; }
+  h3  { font-size: 10.5pt; margin-bottom: 4px; }
   /* Top header strip */
-  .hdr { display: flex; border: 1.5px solid #000; margin-bottom: 6px; }
+  .hdr { display: flex; border: 1.5px solid #000; margin-bottom: 8px; }
   .hdr-cell { flex: 1; padding: 5px 8px; border-right: 1px solid #000; }
   .hdr-cell:last-child { border-right: none; }
-  /* Info table */
-  table.info { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  table.info td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; }
-  table.info td.lbl { font-weight: bold; width: 42%; background: #f5f5f5; }
+  /* Two-column body */
+  .body-wrap { display: flex; gap: 10px; align-items: flex-start; }
+  .col-main { flex: 1 1 0; min-width: 0; }
+  .col-side { width: 210px; flex-shrink: 0; }
+  /* Summary (side) table */
+  table.sum { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5pt; }
+  table.sum td { border: 1px solid #aaa; padding: 3px 6px; vertical-align: top; }
+  table.sum td.sl { background: #f0f0f0; font-weight: bold; width: 56%; white-space: nowrap; }
+  table.sum td.sv { text-align: right; }
+  table.sum tr.sec td { background: #d8e8f8; font-weight: bold; font-size: 9pt; padding: 2px 6px; }
+  table.sum .sub { font-size: 8.5pt; color: #444; font-weight: normal; padding-left: 4px; }
   /* Syringe inner table */
   table.syr { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
-  table.syr th { background: #e8e8e8; border: 1px solid #000; padding: 3px 6px; font-size: 10pt; }
-  table.syr td { border: 1px solid #999; padding: 3px 6px; font-size: 10pt; }
+  table.syr th { background: #e8e8e8; border: 1px solid #000; padding: 3px 6px; font-size: 9.5pt; }
+  table.syr td { border: 1px solid #999; padding: 3px 6px; font-size: 9.5pt; }
   table.syr tr.total td { font-weight: bold; border-top: 1.5px solid #000; background: #f5f5f5; }
   .rc { text-align: right; }
   /* Clinical big box */
-  .clinical { border: 1.5px solid #000; padding: 8px 10px; margin-bottom: 6px; }
-  .sub-lbl { font-weight: bold; margin-top: 8px; margin-bottom: 3px; font-size: 10.5pt; }
+  .clinical { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 6px; }
+  .sub-lbl { font-weight: bold; margin-top: 7px; margin-bottom: 3px; font-size: 10pt; }
   .sub-lbl:first-child { margin-top: 0; }
-  .blank-line { border-bottom: 1px solid #555; margin: 3px 0 8px; min-height: 18px; }
+  .blank-line { border-bottom: 1px solid #555; margin: 3px 0 7px; min-height: 17px; }
   /* Meds box */
-  .meds { border: 1.5px solid #000; padding: 8px 10px; margin-bottom: 8px; }
-  .meds-row { border-bottom: 1px solid #aaa; min-height: 20px; margin-bottom: 6px; padding-bottom: 2px; }
+  .meds { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 7px; }
+  .meds-row { border-bottom: 1px solid #aaa; min-height: 19px; margin-bottom: 5px; padding-bottom: 2px; }
   /* Sign */
-  .sign { margin-top: 16px; text-align: right; font-weight: bold; font-size: 12pt; }
+  .sign { margin-top: 14px; text-align: right; font-weight: bold; font-size: 11pt; }
   .sign span { display: inline-block; border-bottom: 1.5px solid #000; min-width: 180px; padding-bottom: 2px; }
-  @media print { body { padding: 8mm 10mm; } @page { size: A4; margin: 8mm; } }
+  @media print { body { padding: 7mm 9mm; } @page { size: A4; margin: 7mm; } }
 </style>
 </head>
 <body>
-<h2>TPN ORDER SHEET</h2>
+<h1>${hospitalName}</h1>
+<h2>Neonatal Intensive Care Unit</h2>
+<h2 style="font-size:12pt;margin-top:-4px;margin-bottom:8px;">TPN ORDER SHEET</h2>
 
 <div class="hdr">
   <div class="hdr-cell"><b>Name:</b> B/O ${ip.babyOf ? ip.babyOf : blank(18)}</div>
   <div class="hdr-cell"><b>Patient ID:</b> ${ip.patientId || blank(14)}</div>
+  <div class="hdr-cell"><b>Date:</b> ${formatDate(ip.date)}</div>
 </div>
 
-<table class="info">
-  <tr><td class="lbl">Date</td><td>${ip.date || blank(12)}</td></tr>
-  <tr><td class="lbl">PNA</td><td>Day ${blank(6)}</td></tr>
-  <tr><td class="lbl">PMA</td><td>${blank(6)} weeks</td></tr>
-  <tr><td class="lbl">Dosing wt</td><td><b>${ip.weightG}</b> g</td></tr>
-  <tr><td class="lbl">TFR (mL/kg)</td><td><b>${ip.tfr}</b></td></tr>
-  <tr><td class="lbl">Total Vol (mL)</td><td><b>${fv(res.mon.tfv)}</b></td></tr>
-  <tr><td class="lbl">Feeds (mL/kg)</td><td><b>${ip.feeds}</b></td></tr>
-  <tr><td class="lbl">IVM (mL)</td><td><b>${ip.ivm}</b></td></tr>
-  <tr><td class="lbl">TPN fluid (mL)</td><td><b>${fv(res.mon.tpn)}</b></td></tr>
-  <tr><td class="lbl">TPN</td><td>A<b>${ip.aminoAcid}</b> &nbsp; L<b>${ip.lipid}</b> &nbsp; G<b>${ip.gir}</b></td></tr>
-  <tr><td class="lbl">Glucose (g)</td><td><b>${fv(res.mon.tpnG)}</b></td></tr>
-  <tr>
-    <td class="lbl">Na / K<br><span style="font-weight:normal;font-size:9pt;font-style:italic;">(via IVM)</span></td>
-    <td>
-      <b>${ip.sodium} / ${ip.potassium}</b> mEq/kg/d<br>
-      <span style="font-size:9pt;color:#444;">(IVM contributes ${rv(res.mon.naIVM) > 0 ? rv(res.mon.naIVM) : "—"} Na &amp; ${rv(res.mon.kPP) > 0 ? rv(res.mon.kPP) : "—"} K mEq/kg/d)</span>
-    </td>
-  </tr>
-  <tr><td class="lbl">Ca / PO₄ (mEq or mmol/kg/d)</td><td><b>${ip.calcium} / ${ip.po4}</b></td></tr>
-</table>
+<div class="body-wrap">
 
-<div class="clinical">
-  <div class="sub-lbl">Respiratory Support:</div>
-  <div class="blank-line"></div>
+  <!-- LEFT: Clinical orders -->
+  <div class="col-main">
+    <div class="clinical">
+      <div class="sub-lbl">Respiratory Support:</div>
+      <div class="blank-line"></div>
 
-  <div class="sub-lbl">Feeds:</div>
-  <div style="margin-bottom:8px;">
-    ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; q ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
+      <div class="sub-lbl">Feeds:</div>
+      <div style="margin-bottom:8px;">
+        ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; q ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
+      </div>
+
+      <div class="sub-lbl">Parenteral Nutrition:</div>
+
+      ${rv(res.s1.total) > 0 ? `<div style="margin-bottom:6px;">
+        <b>Syringe 1</b><br>
+        ${s1Line || "—"} &nbsp;@ <b>${fv(res.s1.rate, 2)} mL/hr</b>
+      </div>` : ""}
+
+      <table class="syr">
+        <tr>
+          <th style="text-align:left;">Syringe 2</th>
+          <th class="rc">mL</th>
+          <th class="rc">${col2Lbl}</th>
+        </tr>
+        ${syrTableRows(res.s2.items)}
+        <tr class="total">
+          <td>Total</td>
+          <td class="rc">${fv(res.s2.total)}</td>
+          <td class="rc">${fv(res.s2.rate, 2)} mL/hr</td>
+        </tr>
+      </table>
+
+      ${res.s3 ? `
+      <table class="syr">
+        <tr>
+          <th style="text-align:left;">Syringe 3</th>
+          <th class="rc">mL</th>
+          <th class="rc">${col2Lbl}</th>
+        </tr>
+        ${syrTableRows(res.s3.items)}
+        <tr class="total">
+          <td>Total</td>
+          <td class="rc">${fv(res.s3.total)}</td>
+          <td class="rc">${fv(res.s3.rate, 2)} mL/hr</td>
+        </tr>
+      </table>` : ""}
+
+      ${caSyrNum != null ? `
+      <div style="margin-bottom:6px;">
+        <b>Syringe ${caSyrNum}: (Calcium)</b><br>
+        Inj. 10% CALCIUM GLUCONATE &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
+      </div>` : ""}
+
+      ${ppSyrNum != null ? `
+      <div style="margin-bottom:4px;">
+        <b>Syringe ${ppSyrNum}: (Phosphorus)</b><br>
+        Inj. POTASSIUM PHOSPHATE (POTPHOS) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
+      </div>` : ""}
+    </div>
+
+    <div class="meds">
+      <h3>Medications:</h3>
+      <div class="meds-row">1.</div>
+      <div class="meds-row">2.</div>
+      <div class="meds-row">3.</div>
+    </div>
+
+    <div class="sign">SR SIGN: &nbsp;<span></span></div>
   </div>
 
-  <div class="sub-lbl">Parenteral Nutrition:</div>
+  <!-- RIGHT: Summary table -->
+  <div class="col-side">
+    <table class="sum">
+      <tr class="sec"><td colspan="2">Patient Parameters</td></tr>
+      <tr><td class="sl">PNA</td><td class="sv">Day ${blank(4)}</td></tr>
+      <tr><td class="sl">PMA</td><td class="sv">${blank(4)} wks</td></tr>
+      <tr><td class="sl">Wt (g)</td><td class="sv"><b>${ip.weightG}</b></td></tr>
 
-  <div style="margin-bottom:6px;">
-    <b>Syringe 1</b><br>
-    ${s1Line} &nbsp;@ <b>${fv(res.s1.rate, 2)} mL/hr</b>
+      <tr class="sec"><td colspan="2">Fluids</td></tr>
+      <tr><td class="sl">TFR (mL/kg)</td><td class="sv"><b>${ip.tfr}</b></td></tr>
+      <tr><td class="sl">Total Vol (mL)</td><td class="sv"><b>${fv(res.mon.tfv)}</b></td></tr>
+      <tr><td class="sl">Feeds (mL/kg)</td><td class="sv"><b>${ip.feeds}</b></td></tr>
+      <tr><td class="sl">IVM (mL)</td><td class="sv"><b>${ip.ivm}</b></td></tr>
+      <tr><td class="sl">TPN fluid (mL)</td><td class="sv"><b>${fv(res.mon.tpn)}</b></td></tr>
+
+      <tr class="sec"><td colspan="2">Nutrition (g/kg/d)</td></tr>
+      <tr><td class="sl">AA (g/kg/d)</td><td class="sv"><b>${ip.aminoAcid}</b></td></tr>
+      <tr><td class="sl">Lipid (g/kg/d)</td><td class="sv"><b>${ip.lipid}</b></td></tr>
+      <tr><td class="sl">GIR (mg/kg/min)</td><td class="sv"><b>${ip.gir}</b></td></tr>
+      <tr><td class="sl">Glucose (g)</td><td class="sv"><b>${fv(res.mon.tpnG)}</b></td></tr>
+
+      <tr class="sec"><td colspan="2">Electrolytes (mEq/kg/d)</td></tr>
+      <tr>
+        <td class="sl">
+          Na (mEq/kg/d)<br>
+          <span class="sub">via TPN: ${naTPN}</span><br>
+          <span class="sub">via IVM: ${naTotal > 0 ? naTotal : "—"}</span>
+        </td>
+        <td class="sv"><b>${ip.sodium}</b></td>
+      </tr>
+      <tr>
+        <td class="sl">
+          K (mEq/kg/d)<br>
+          <span class="sub">via KCl/IVM: ${kIVM > 0 ? kIVM : "—"}</span><br>
+          <span class="sub">via PotPhos: ${kPPval > 0 ? kPPval : "—"}</span>
+        </td>
+        <td class="sv"><b>${ip.potassium}</b></td>
+      </tr>
+
+      <tr class="sec"><td colspan="2">Minerals (mg/kg/d)</td></tr>
+      <tr><td class="sl">Ca (mg/kg/d)</td><td class="sv"><b>${ip.calcium}</b></td></tr>
+      <tr><td class="sl">PO₄ (mg/kg/d)</td><td class="sv"><b>${ip.po4}</b></td></tr>
+
+      <tr class="sec"><td colspan="2">Calculated Values</td></tr>
+      <tr><td class="sl">Dextrose %</td><td class="sv"><b>${fv(res.mon.dex, 1)}%</b></td></tr>
+      <tr><td class="sl">Osmolarity</td><td class="sv"><b>${Math.round(res.mon.osm)} mOsm</b></td></tr>
+    </table>
   </div>
 
-  <table class="syr">
-    <tr>
-      <th style="text-align:left;">Syringe 2</th>
-      <th class="rc">mL</th>
-      <th class="rc">${col2Lbl}</th>
-    </tr>
-    ${syrTableRows(res.s2.items)}
-    <tr class="total">
-      <td>Total</td>
-      <td class="rc">${fv(res.s2.total)}</td>
-      <td class="rc">${fv(res.s2.rate, 2)} mL/hr</td>
-    </tr>
-  </table>
-
-  ${res.s3 ? `
-  <table class="syr">
-    <tr>
-      <th style="text-align:left;">Syringe 3</th>
-      <th class="rc">mL</th>
-      <th class="rc">${col2Lbl}</th>
-    </tr>
-    ${syrTableRows(res.s3.items)}
-    <tr class="total">
-      <td>Total</td>
-      <td class="rc">${fv(res.s3.total)}</td>
-      <td class="rc">${fv(res.s3.rate, 2)} mL/hr</td>
-    </tr>
-  </table>` : ""}
-
-  ${caSyrNum != null ? `
-  <div style="margin-bottom:6px;">
-    <b>Syringe ${caSyrNum}: (Calcium)</b><br>
-    Inj. CALCIUM GLUCONATE 10% &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
-  </div>` : ""}
-
-  ${ppSyrNum != null ? `
-  <div style="margin-bottom:4px;">
-    <b>Syringe ${ppSyrNum}: (Phosphorus)</b><br>
-    Inj. POTASSIUM PHOSPHATE (POTPHOS) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
-  </div>` : ""}
 </div>
-
-<div class="meds">
-  <h3>Medications:</h3>
-  <div class="meds-row">1.</div>
-  <div class="meds-row">2.</div>
-  <div class="meds-row">3.</div>
-</div>
-
-<div class="sign">SR SIGN: &nbsp;<span></span></div>
 
 <script>window.onload = function() { window.print(); };</script>
 </body>
 </html>`;
 
-  const w = window.open("", "_blank", "width=820,height=1000");
+  const w = window.open("", "_blank", "width=860,height=1100");
   if (!w) { alert("Pop-up blocked. Please allow pop-ups for this site."); return; }
   w.document.write(html);
   w.document.close();
