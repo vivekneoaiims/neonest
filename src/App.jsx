@@ -531,8 +531,12 @@ function printTPN(ip, res) {
   .hdr-cell:last-child { border-right: none; }
   /* Two-column body */
   .body-wrap { display: flex; gap: 10px; align-items: flex-start; }
-  .col-main { flex: 1 1 0; min-width: 0; }
+  .col-main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
   .col-side { width: 210px; flex-shrink: 0; }
+  /* Respiratory support box */
+  .resp-box { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 6px; }
+  /* Feeds section (no box) */
+  .feeds-section { padding: 2px 0; margin-bottom: 2px; }
   /* Summary (side) table */
   table.sum { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5pt; }
   table.sum td { border: 1px solid #aaa; padding: 3px 6px; vertical-align: top; }
@@ -540,6 +544,7 @@ function printTPN(ip, res) {
   table.sum td.sv { text-align: right; }
   table.sum tr.sec td { background: #d8e8f8; font-weight: bold; font-size: 9pt; padding: 2px 6px; }
   table.sum .sub { font-size: 8.5pt; color: #444; font-weight: normal; padding-left: 4px; }
+  table.sum .unit { font-size: 8pt; font-weight: normal; color: #555; }
   /* Syringe inner table */
   table.syr { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
   table.syr th { background: #e8e8e8; border: 1px solid #000; padding: 3px 6px; font-size: 9.5pt; }
@@ -551,11 +556,10 @@ function printTPN(ip, res) {
   .sub-lbl { font-weight: bold; margin-top: 7px; margin-bottom: 3px; font-size: 10pt; }
   .sub-lbl:first-child { margin-top: 0; }
   .blank-line { border-bottom: 1px solid #555; margin: 3px 0 7px; min-height: 17px; }
-  /* Meds box */
-  .meds { border: 1.5px solid #000; padding: 7px 9px; margin-bottom: 7px; }
+  /* Meds (no box) */
   .meds-row { border-bottom: 1px solid #aaa; min-height: 19px; margin-bottom: 5px; padding-bottom: 2px; }
-  /* Sign */
-  .sign { margin-top: 14px; text-align: right; font-weight: bold; font-size: 11pt; }
+  /* Sign – pushed to bottom */
+  .sign { margin-top: auto; padding-top: 20px; text-align: right; font-weight: bold; font-size: 11pt; }
   .sign span { display: inline-block; border-bottom: 1.5px solid #000; min-width: 180px; padding-bottom: 2px; }
   @media print { body { padding: 7mm 9mm; } @page { size: A4; margin: 7mm; } }
 </style>
@@ -563,7 +567,7 @@ function printTPN(ip, res) {
 <body>
 <h1>${hospitalName}</h1>
 <h2>Neonatal Intensive Care Unit</h2>
-<h2 style="font-size:12pt;margin-top:-4px;margin-bottom:8px;">TPN ORDER SHEET</h2>
+<h2 style="font-size:12pt;margin-top:-4px;margin-bottom:8px;">Treatment Chart</h2>
 
 <div class="hdr">
   <div class="hdr-cell"><b>Name:</b> B/O ${ip.babyOf ? ip.babyOf : blank(18)}</div>
@@ -575,16 +579,22 @@ function printTPN(ip, res) {
 
   <!-- LEFT: Clinical orders -->
   <div class="col-main">
-    <div class="clinical">
-      <div class="sub-lbl">Respiratory Support:</div>
+    <div class="resp-box">
+      <div class="sub-lbl" style="margin-top:0;">Respiratory Support:</div>
       <div class="blank-line"></div>
+    </div>
 
+    <div class="feeds-section">
       <div class="sub-lbl">Feeds:</div>
-      <div style="margin-bottom:8px;">
+      <div style="margin-bottom:4px;">
         ${blank(4)} feeds &nbsp;(EBM / PDHM)&nbsp; ${blank(4)} mL &nbsp; q ${blank(4)} hourly &nbsp; for ${blank(4)} feeds
       </div>
+    </div>
 
-      <div class="sub-lbl">Parenteral Nutrition:</div>
+    <div style="height:10px;"></div>
+
+    <div class="clinical">
+      <div class="sub-lbl" style="margin-top:0;">Parenteral Nutrition:</div>
 
       ${rv(res.s1.total) > 0 ? `<div style="margin-bottom:6px;">
         <b>Syringe 1</b><br>
@@ -621,24 +631,20 @@ function printTPN(ip, res) {
       </table>` : ""}
 
       ${caSyrNum != null ? `
-      <div style="margin-bottom:6px;">
+      <div style="margin-bottom:10px;">
         <b>Syringe ${caSyrNum}: (Calcium)</b><br>
-        Inj. 10% CALCIUM GLUCONATE &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
+        Inj. 10% Calcium Gluconate &nbsp; <b>${fv(res.sep.ca, 2)} mL</b>
       </div>` : ""}
 
       ${ppSyrNum != null ? `
       <div style="margin-bottom:4px;">
         <b>Syringe ${ppSyrNum}: (Phosphorus)</b><br>
-        Inj. POTASSIUM PHOSPHATE (POTPHOS) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
+        Inj. Potassium Phosphate (Potphos) &nbsp; <b>${fv(res.sep.pp, 2)} mL</b>
       </div>` : ""}
     </div>
 
-    <div class="meds">
-      <h3>Medications:</h3>
-      <div class="meds-row">1.</div>
-      <div class="meds-row">2.</div>
-      <div class="meds-row">3.</div>
-    </div>
+    <div class="sub-lbl" style="margin-top:8px;">Medications:</div>
+    <div class="meds-row">1.</div>
 
     <div class="sign">SR SIGN: &nbsp;<span></span></div>
   </div>
@@ -649,25 +655,25 @@ function printTPN(ip, res) {
       <tr class="sec"><td colspan="2">Patient Parameters</td></tr>
       <tr><td class="sl">PNA</td><td class="sv">Day ${blank(4)}</td></tr>
       <tr><td class="sl">PMA</td><td class="sv">${blank(4)} wks</td></tr>
-      <tr><td class="sl">Wt (g)</td><td class="sv"><b>${ip.weightG}</b></td></tr>
+      <tr><td class="sl">Weight <span class="unit">g</span></td><td class="sv"><b>${ip.weightG}</b></td></tr>
 
       <tr class="sec"><td colspan="2">Fluids</td></tr>
-      <tr><td class="sl">TFR (mL/kg)</td><td class="sv"><b>${ip.tfr}</b></td></tr>
-      <tr><td class="sl">Total Vol (mL)</td><td class="sv"><b>${fv(res.mon.tfv)}</b></td></tr>
-      <tr><td class="sl">Feeds (mL/kg)</td><td class="sv"><b>${ip.feeds}</b></td></tr>
-      <tr><td class="sl">IVM (mL)</td><td class="sv"><b>${ip.ivm}</b></td></tr>
-      <tr><td class="sl">TPN fluid (mL)</td><td class="sv"><b>${fv(res.mon.tpn)}</b></td></tr>
+      <tr><td class="sl">TFR <span class="unit">mL/kg</span></td><td class="sv"><b>${ip.tfr}</b></td></tr>
+      <tr><td class="sl">Total Vol <span class="unit">mL</span></td><td class="sv"><b>${fv(res.mon.tfv)}</b></td></tr>
+      <tr><td class="sl">Feeds <span class="unit">mL/kg</span></td><td class="sv"><b>${ip.feeds}</b></td></tr>
+      <tr><td class="sl">IVM <span class="unit">mL</span></td><td class="sv"><b>${ip.ivm}</b></td></tr>
+      <tr><td class="sl">TPN fluid <span class="unit">mL</span></td><td class="sv"><b>${fv(res.mon.tpn)}</b></td></tr>
 
-      <tr class="sec"><td colspan="2">Nutrition (g/kg/d)</td></tr>
-      <tr><td class="sl">AA (g/kg/d)</td><td class="sv"><b>${ip.aminoAcid}</b></td></tr>
-      <tr><td class="sl">Lipid (g/kg/d)</td><td class="sv"><b>${ip.lipid}</b></td></tr>
-      <tr><td class="sl">GIR (mg/kg/min)</td><td class="sv"><b>${ip.gir}</b></td></tr>
-      <tr><td class="sl">Glucose (g)</td><td class="sv"><b>${fv(res.mon.tpnG)}</b></td></tr>
+      <tr class="sec"><td colspan="2">Nutrition</td></tr>
+      <tr><td class="sl">AA <span class="unit">g/kg/d</span></td><td class="sv"><b>${ip.aminoAcid}</b></td></tr>
+      <tr><td class="sl">Lipid <span class="unit">g/kg/d</span></td><td class="sv"><b>${ip.lipid}</b></td></tr>
+      <tr><td class="sl">GIR <span class="unit">mg/kg/min</span></td><td class="sv"><b>${ip.gir}</b></td></tr>
+      <tr><td class="sl">Glucose <span class="unit">g</span></td><td class="sv"><b>${fv(res.mon.tpnG)}</b></td></tr>
 
-      <tr class="sec"><td colspan="2">Electrolytes (mEq/kg/d)</td></tr>
+      <tr class="sec"><td colspan="2">Electrolytes</td></tr>
       <tr>
         <td class="sl">
-          Na (mEq/kg/d)<br>
+          Na <span class="unit">mEq/kg/d</span><br>
           <span class="sub">via TPN: ${naTPN}</span><br>
           <span class="sub">via IVM: ${naTotal > 0 ? naTotal : "—"}</span>
         </td>
@@ -675,20 +681,20 @@ function printTPN(ip, res) {
       </tr>
       <tr>
         <td class="sl">
-          K (mEq/kg/d)<br>
+          K <span class="unit">mEq/kg/d</span><br>
           <span class="sub">via KCl/IVM: ${kIVM > 0 ? kIVM : "—"}</span><br>
           <span class="sub">via PotPhos: ${kPPval > 0 ? kPPval : "—"}</span>
         </td>
         <td class="sv"><b>${ip.potassium}</b></td>
       </tr>
 
-      <tr class="sec"><td colspan="2">Minerals (mg/kg/d)</td></tr>
-      <tr><td class="sl">Ca (mg/kg/d)</td><td class="sv"><b>${ip.calcium}</b></td></tr>
-      <tr><td class="sl">PO₄ (mg/kg/d)</td><td class="sv"><b>${ip.po4}</b></td></tr>
+      <tr class="sec"><td colspan="2">Minerals</td></tr>
+      <tr><td class="sl">Ca <span class="unit">mg/kg/d</span></td><td class="sv"><b>${ip.calcium}</b></td></tr>
+      <tr><td class="sl">PO₄ <span class="unit">mg/kg/d</span></td><td class="sv"><b>${ip.po4}</b></td></tr>
 
       <tr class="sec"><td colspan="2">Calculated Values</td></tr>
-      <tr><td class="sl">Dextrose %</td><td class="sv"><b>${fv(res.mon.dex, 1)}%</b></td></tr>
-      <tr><td class="sl">Osmolarity</td><td class="sv"><b>${Math.round(res.mon.osm)} mOsm</b></td></tr>
+      <tr><td class="sl">Dextrose <span class="unit">%</span></td><td class="sv"><b>${fv(res.mon.dex, 1)}%</b></td></tr>
+      <tr><td class="sl">Osmolarity <span class="unit">mOsm</span></td><td class="sv"><b>${Math.round(res.mon.osm)}</b></td></tr>
     </table>
   </div>
 
