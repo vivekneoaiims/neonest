@@ -1154,7 +1154,7 @@ function NutDBEditor({ T, nutOv, saveNutOv, fortType, onClose, onSupSaved }) {
     setD(p => ({ ...p, [k]: { ...p[k], [actualField]: val } }));
   };
   const updRda = (k, field, idx, val) => setD(p => { const arr = [...(p[k][field] || [0, 0])]; arr[idx] = val; return { ...p, [k]: { ...p[k], [field]: arr } }; });
-  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: fortType === "PTF" ? "PTF" : "HMF", sub: "per gram" }, { id: "sup", l: "Suppl.", sub: "defaults" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN", sub: "RDA range" }];
+  const tabs = [{ id: "bm", l: "EBM", sub: "per 100 mL" }, { id: "fm", l: "Formula", sub: "per 100 mL" }, { id: "hm", l: fortType === "PTF" ? "PTF" : "HMF", sub: "per gram" }, { id: "sup", l: "Suppl.", sub: "defaults" }, { id: "aap", l: "AAP", sub: "RDA range" }, { id: "esp", l: "ESPGHAN 2022", sub: "RDA range" }];
   const isRda = tab === "aap" || tab === "esp";
   const isSup = tab === "sup";
   return <div style={{ background: T.card, borderRadius: 12, border: "1px solid " + T.border, boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
@@ -1272,8 +1272,8 @@ function printNutritionAudit(ip, res, fortLabel) {
   else if (hasMVI) advLines.push("Ensure MVI is given daily at recommended dose — it is the primary source of most deficient vitamins and trace elements.");
   if (hasCaP) advLines.push("Increase Ca/P syrup dose and HMF to address bone mineral deficits; give iron separately by ≥2 hours.");
   else if (hasFe) advLines.push("Start or increase elemental iron (target 2–3 mg/kg/d); give 2 hours apart from Ca/P supplement.");
-  if (hasVitD) advLines.push("Supplement Vitamin D to reach ESPGHAN target of 400–700 IU/kg/d.");
-  if (hasNa) advLines.push("Increase NaCl supplementation — target 3–5 mEq/kg/d per ESPGHAN.");
+  if (hasVitD) advLines.push("Supplement Vitamin D to reach ESPGHAN 2022 target of 400–700 IU/kg/d.");
+  if (hasNa) advLines.push("Increase NaCl supplementation — target 3–5 mEq/kg/d per ESPGHAN 2022.");
   if (advLines.length === 0 && grosslyLow.length > 0) advLines.push("Review and optimise doses for: " + names + ".");
 
   // Status symbol for B&W print
@@ -1344,7 +1344,7 @@ function printNutritionAudit(ip, res, fortLabel) {
   table.nut th { background: #e0e0e0; border: 1px solid #999; padding: 2px 4px; font-size: 8pt; text-align: left; }
   table.nut td { border: 1px solid #ccc; padding: 2px 4px; }
   table.nut .val { text-align: right; font-weight: bold; }
-  table.nut .rda { text-align: right; color: #555; font-size: 8pt; }
+  table.nut .rda { text-align: right; color: #555; font-size: 8pt; min-width: 52px; }
   table.nut .unit { color: #666; font-size: 7.5pt; }
   table.nut tr.low td { background: #f5f5f5; }
   table.nut tr.low .val { color: #000; }
@@ -1402,16 +1402,16 @@ function printNutritionAudit(ip, res, fortLabel) {
 
     <div class="sec">Nutrient Audit &nbsp;·&nbsp; <span style="font-weight:normal;">▼ below RDA &nbsp; ▲ above RDA &nbsp; ● adequate</span></div>
     <table class="nut">
-      <tr><th>Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th style="text-align:right;">ESPGHAN</th></tr>
+      <tr><th>Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th style="text-align:right;word-break:keep-all;">ESPGHAN<br/>2022</th></tr>
       ${nutrientRows}
     </table>
 
     ${grosslyLow.length > 0 ? `
     <div class="adv">
       <div class="adv-title">⚠ Deficiency Advisory</div>
-      <div class="adv-sub">${grosslyLow.length} nutrient${grosslyLow.length > 1 ? "s" : ""} below ESPGHAN RDA (&lt;80%): ${names}</div>
+      <div class="adv-sub">${grosslyLow.length} nutrient${grosslyLow.length > 1 ? "s" : ""} below ESPGHAN 2022 RDA (&lt;80%): ${names}</div>
       ${advLines.map(l => `<div class="adv-line">${l}</div>`).join("")}
-    </div>` : `<div style="font-size:8.5pt;padding:5px 6px;border:1px solid #ccc;margin-bottom:6px;">✓ All audited nutrients within ESPGHAN RDA</div>`}
+    </div>` : `<div style="font-size:8.5pt;padding:5px 6px;border:1px solid #ccc;margin-bottom:6px;">✓ All audited nutrients within ESPGHAN 2022 RDA</div>`}
 
     <div class="sec" style="margin-bottom:2px;">Source Breakdown (key nutrients)</div>
     <table class="src">
@@ -1585,19 +1585,19 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
               <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.inp, color: T.t3 }}>{ip.feedSrc}</span>
             </div>
           </div>
-          <div style={{ fontSize: 10, color: T.t3 }}>Color-coded vs ESPGHAN RDA</div>
+          <div style={{ fontSize: 10, color: T.t3 }}>Color-coded vs ESPGHAN 2022 RDA</div>
         </div>
         {/* Header */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 58px 70px", gap: 0, padding: "6px 10px", borderBottom: "1px solid " + T.border, background: T.inp }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 62px 82px", gap: 4, padding: "6px 10px", borderBottom: "1px solid " + T.border, background: T.inp }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: T.t3 }}>NUTRIENT</span>
           <span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "right" }}>INTAKE</span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "right" }}>ESPGHAN</span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: T.t3, textAlign: "right" }}>ESPGHAN 2022</span>
         </div>
         {(expanded ? res.rows : res.rows.slice(0, 8)).map((r, i) => {
           const sc = statusColor(r.status);
           const bg = statusBg(r.status);
           const rdaStr = rda => rda ? (rda[0] === rda[1] ? ">" + rda[0] : rda[0] + "-" + rda[1]) : "-";
-          return <div key={r.k} style={{ display: "grid", gridTemplateColumns: "1fr 58px 70px", gap: 0, padding: "7px 10px", borderBottom: i < (expanded ? res.rows.length : 8) - 1 ? "1px solid " + T.border + "44" : "none", alignItems: "center", background: bg }}>
+          return <div key={r.k} style={{ display: "grid", gridTemplateColumns: "1fr 62px 82px", gap: 4, padding: "7px 10px", borderBottom: i < (expanded ? res.rows.length : 8) - 1 ? "1px solid " + T.border + "44" : "none", alignItems: "center", background: bg }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 6, height: 6, borderRadius: 3, background: sc, flexShrink: 0 }} />
               <div><div style={{ fontSize: 11, fontWeight: 600, color: T.t1 }}>{r.n}</div><div style={{ fontSize: 8, color: T.t3 }}>{r.u}</div></div>
@@ -1633,8 +1633,8 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
         else if (hasMVI) lines.push("Ensure MVI is given daily at recommended dose — it is the primary source of most deficient vitamins and trace elements.");
         if (hasCaP) lines.push("Increase Ca/P syrup dose and HMF to address bone mineral deficits; give iron separately by ≥2 hours.");
         else if (hasFe) lines.push("Start or increase elemental iron (target 2–3 mg/kg/d); give 2 hours apart from Ca/P supplement.");
-        if (hasVitD) lines.push("Supplement Vitamin D to reach ESPGHAN target of 400–700 IU/kg/d (typically 400–800 IU/day regardless of weight).");
-        if (hasNa) lines.push("Increase NaCl supplementation — check serum sodium and target 3–5 mEq/kg/d per ESPGHAN.");
+        if (hasVitD) lines.push("Supplement Vitamin D to reach ESPGHAN 2022 target of 400–700 IU/kg/d (typically 400–800 IU/day regardless of weight).");
+        if (hasNa) lines.push("Increase NaCl supplementation — check serum sodium and target 3–5 mEq/kg/d per ESPGHAN 2022.");
         if (lines.length === 0) lines.push("Review and optimise doses for: " + names + ".");
 
         return <div style={{ background: T.card, borderRadius: 12, border: "1.5px solid " + T.amber + "55", boxShadow: T.shadow, marginBottom: 8, overflow: "hidden" }}>
@@ -1642,7 +1642,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
             <span style={{ fontSize: 18 }}>⚠️</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.amber }}>Deficiency Advisory</div>
-              <div style={{ fontSize: 10, color: T.t3 }}>{grosslyLow.length} nutrient{grosslyLow.length > 1 ? "s" : ""} below ESPGHAN RDA (&lt;80%): {names}</div>
+              <div style={{ fontSize: 10, color: T.t3 }}>{grosslyLow.length} nutrient{grosslyLow.length > 1 ? "s" : ""} below ESPGHAN 2022 RDA (&lt;80%): {names}</div>
             </div>
           </div>
           <div style={{ padding: "12px 14px" }}>
