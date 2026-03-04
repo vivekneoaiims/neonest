@@ -1402,7 +1402,7 @@ function printNutritionAudit(ip, res, fortLabel) {
 
     <div class="sec">Nutrient Audit &nbsp;·&nbsp; <span style="font-weight:normal;">▼ below RDA &nbsp; ▲ above RDA &nbsp; ● adequate</span></div>
     <table class="nut">
-      <tr><th>Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th style="text-align:right;word-break:keep-all;">ESPGHAN<br/>2022</th></tr>
+      <tr><th style="width:38%;">Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th style="text-align:right;white-space:nowrap;">ESPGHAN 2022</th></tr>
       ${nutrientRows}
     </table>
 
