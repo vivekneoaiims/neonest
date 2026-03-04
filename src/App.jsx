@@ -1114,7 +1114,7 @@ function calcNutrition(ip, nutDB) {
     return { ...nut, fromEbm, fromFm, fromHmf, fromSup, totalAbs, perKg, status };
   });
   const eRow = rows.find(r => r.k === "energy"), pRow = rows.find(r => r.k === "protein");
-  const pe = eRow && pRow && eRow.perKg > 0 ? (pRow.perKg / eRow.perKg) * 1000 : 0;
+  const pe = eRow && pRow && eRow.perKg > 0 ? (pRow.perKg / eRow.perKg) * 100 : 0;
   return { rows, feedMlKg, totalFeedMl, ebmMl, fmMl, hmfG, wtGain, pe, wt };
 }
 function NutDBEditor({ T, nutOv, saveNutOv, fortType, onClose, onSupSaved }) {
@@ -1387,12 +1387,12 @@ function printNutritionAudit(ip, res, fortLabel) {
 
 <!-- Key metrics strip -->
 <div class="metrics">
+  <div class="metric"><div class="mv">${res.wtGain.toFixed(1)}</div><div class="ml">Wt Gain</div><div class="mu">g/kg/d ${res.wtGain >= 15 ? "✓" : "⚠"}</div></div>
   <div class="metric"><div class="mv">${Math.round(res.rows.find(r=>r.k==="energy").perKg)}</div><div class="ml">Calories</div><div class="mu">kcal/kg</div></div>
   <div class="metric"><div class="mv">${fv(res.rows.find(r=>r.k==="protein").perKg)}</div><div class="ml">Protein</div><div class="mu">g/kg</div></div>
-  <div class="metric"><div class="mv">${res.pe.toFixed(1)}</div><div class="ml">P:E Ratio</div><div class="mu">${res.pe < 2.8 || res.pe > 3.6 ? "⚠ target 2.8–3.6" : "✓ target 2.8–3.6"}</div></div>
-  <div class="metric"><div class="mv">${Math.round(res.feedMlKg)}</div><div class="ml">Feed Vol</div><div class="mu">mL/kg</div></div>
-  <div class="metric"><div class="mv">${fv(res.hmfG)}</div><div class="ml">${fortLabel}</div><div class="mu">g/d</div></div>
-  <div class="metric"><div class="mv">${res.wtGain.toFixed(1)}</div><div class="ml">Wt Gain</div><div class="mu">g/kg/d ${res.wtGain >= 15 ? "✓" : "⚠"}</div></div>
+  <div class="metric"><div class="mv">${res.pe.toFixed(1)}</div><div class="ml">P:E Ratio</div><div class="mu">${res.pe < 2.6 || res.pe > 4.1 ? "⚠ target 2.6–4.1" : "✓ target 2.6–4.1"}</div></div>
+  <div class="metric"><div class="mv">${fv(res.rows.find(r=>r.k==="ca")?.perKg ?? 0)}</div><div class="ml">Calcium</div><div class="mu">mg/kg</div></div>
+  <div class="metric"><div class="mv">${fv(res.rows.find(r=>r.k==="po4")?.perKg ?? 0)}</div><div class="ml">Phosphorus</div><div class="mu">mg/kg</div></div>
 </div>
 
 <div class="body-wrap">
@@ -1567,7 +1567,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
         <Metric label="Calories" val={r1(res.rows.find(r => r.k === "energy").perKg).toFixed(0)} unit="kcal/kg" color={T.accent} T={T} warn={res.rows.find(r => r.k === "energy").status === "low" ? "mid" : undefined} />
         <Metric label="Protein" val={r1(res.rows.find(r => r.k === "protein").perKg).toFixed(1)} unit="g/kg" color={T.green} T={T} />
-        <Metric label="P:E ratio" val={res.pe.toFixed(1)} unit="" color={T.purple} T={T} warn={res.pe < 2.8 || res.pe > 3.6 ? "mid" : undefined} />
+        <Metric label="P:E ratio" val={res.pe.toFixed(1)} unit="g/100kcal" color={T.purple} T={T} warn={res.pe < 2.6 || res.pe > 4.1 ? "mid" : undefined} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
         <Metric label="Feed vol" val={r1(res.feedMlKg).toFixed(0)} unit="mL/kg" color={T.accent} T={T} />
