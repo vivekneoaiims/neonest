@@ -1237,6 +1237,235 @@ function NutDBEditor({ T, nutOv, saveNutOv, fortType, onClose, onSupSaved }) {
     </div>
   </div>;
 }
+function printNutritionAudit(ip, res, fortLabel) {
+  const r1 = v => Math.round(v * 10) / 10;
+  const fv = (v, d = 1) => r1(v).toFixed(d);
+  const blank = (n = 8) => "_".repeat(n);
+
+  // Hospital name
+  let hospitalName = "LHMC & Associated Hospitals";
+  try {
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
+    if (profile.hospital) hospitalName = profile.hospital;
+  } catch(e) {}
+
+  // Date dd-mm-yyyy
+  const formatDate = (d) => {
+    if (!d) return blank(10);
+    const p = d.split("-");
+    return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
+  };
+
+  // Advisory logic (mirrors screen)
+  const grosslyLow = res.rows.filter(r => r.esp && r.esp[0] > 0 && r.perKg < r.esp[0] * 0.80);
+  const keys = grosslyLow.map(r => r.k);
+  const hasMacro = keys.some(k => ["energy","protein","fat","carb"].includes(k));
+  const hasMVI   = keys.some(k => ["vita","vitc","vite","zn","ribo","nica","pyri","thia"].includes(k));
+  const hasCaP   = keys.some(k => ["ca","po4"].includes(k));
+  const hasFe    = keys.includes("fe");
+  const hasVitD  = keys.includes("vitd");
+  const hasNa    = keys.includes("na");
+  const names    = grosslyLow.map(r => r.n).join(", ");
+  const advLines = [];
+  if (hasMVI && hasMacro) advLines.push("Optimise nutrition delivery: increase feed volume or HMF/PTF dose, and ensure MVI is given daily — this will address most macro and micronutrient gaps together.");
+  else if (hasMacro) advLines.push("Increase total feed volume and/or HMF/PTF dose to meet calorie and macronutrient targets.");
+  else if (hasMVI) advLines.push("Ensure MVI is given daily at recommended dose — it is the primary source of most deficient vitamins and trace elements.");
+  if (hasCaP) advLines.push("Increase Ca/P syrup dose and HMF to address bone mineral deficits; give iron separately by ≥2 hours.");
+  else if (hasFe) advLines.push("Start or increase elemental iron (target 2–3 mg/kg/d); give 2 hours apart from Ca/P supplement.");
+  if (hasVitD) advLines.push("Supplement Vitamin D to reach ESPGHAN target of 400–700 IU/kg/d.");
+  if (hasNa) advLines.push("Increase NaCl supplementation — target 3–5 mEq/kg/d per ESPGHAN.");
+  if (advLines.length === 0 && grosslyLow.length > 0) advLines.push("Review and optimise doses for: " + names + ".");
+
+  // Status symbol for B&W print
+  const stSym = st => st === "low" ? "▼" : st === "high" ? "▲" : "●";
+  const stCls = st => st === "low" ? "low" : st === "high" ? "high" : "ok";
+
+  // RDA display
+  const rdaStr = rda => !rda ? "—" : rda[0] === rda[1] ? ">" + rda[0] : rda[0] + "–" + rda[1];
+
+  // All nutrient rows as table HTML
+  const nutrientRows = res.rows.map(r =>
+    `<tr class="${stCls(r.status)}">
+      <td>${stSym(r.status)} ${r.n}</td>
+      <td class="unit">${r.u}</td>
+      <td class="val">${r.perKg < 10 ? r.perKg.toFixed(1) : Math.round(r.perKg)}</td>
+      <td class="rda">${rdaStr(r.esp)}</td>
+    </tr>`
+  ).join("");
+
+  // Source breakdown rows (only key nutrients)
+  const breakdownKeys = ["energy","protein","ca","po4","fe","vitd"];
+  const breakdownRows = breakdownKeys.map(k => {
+    const r = res.rows.find(x => x.k === k);
+    if (!r) return "";
+    const total = r.totalAbs || 1;
+    const bars = [
+      {l:"EBM", v: r.fromEbm}, {l:"Formula", v: r.fromFm},
+      {l: fortLabel, v: r.fromHmf}, {l:"Suppl.", v: r.fromSup}
+    ].filter(b => b.v > 0);
+    const pcts = bars.map(b => `${b.l} ${Math.round(b.v/total*100)}%`).join(" · ");
+    return `<tr>
+      <td>${r.n}</td>
+      <td class="unit">${r.u}</td>
+      <td class="val">${r.perKg < 10 ? r.perKg.toFixed(1) : Math.round(r.perKg)}</td>
+      <td class="src">${pcts || "—"}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Nutrition Audit – B/o ${ip.babyOf || ""}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 9.5pt; color: #000; padding: 8mm 10mm; }
+  h1 { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 2px; }
+  h2 { font-size: 10.5pt; font-weight: bold; text-align: center; margin-bottom: 6px; }
+  /* Header strip */
+  .hdr { display: flex; border: 1.5px solid #000; margin-bottom: 6px; }
+  .hdr-cell { flex: 1; padding: 4px 7px; border-right: 1px solid #000; font-size: 9pt; }
+  .hdr-cell:last-child { border-right: none; }
+  /* Two-column layout */
+  .body-wrap { display: flex; gap: 8px; align-items: flex-start; }
+  .col-left { flex: 1 1 0; min-width: 0; }
+  .col-right { width: 190px; flex-shrink: 0; }
+  /* Section label */
+  .sec { font-size: 8.5pt; font-weight: bold; background: #e0e0e0; padding: 2px 6px; margin-bottom: 0; }
+  /* Metrics strip */
+  .metrics { display: flex; border: 1px solid #ccc; margin-bottom: 6px; }
+  .metric { flex: 1; text-align: center; padding: 4px 2px; border-right: 1px solid #ccc; }
+  .metric:last-child { border-right: none; }
+  .metric .mv { font-size: 12pt; font-weight: bold; }
+  .metric .ml { font-size: 7.5pt; color: #555; }
+  .metric .mu { font-size: 7pt; color: #555; }
+  /* Nutrient table */
+  table.nut { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 6px; }
+  table.nut th { background: #e0e0e0; border: 1px solid #999; padding: 2px 4px; font-size: 8pt; text-align: left; }
+  table.nut td { border: 1px solid #ccc; padding: 2px 4px; }
+  table.nut .val { text-align: right; font-weight: bold; }
+  table.nut .rda { text-align: right; color: #555; font-size: 8pt; }
+  table.nut .unit { color: #666; font-size: 7.5pt; }
+  table.nut tr.low td { background: #f5f5f5; }
+  table.nut tr.low .val { color: #000; }
+  table.nut tr.low td:first-child { font-weight: bold; }
+  table.nut tr.high td:first-child { font-style: italic; }
+  /* Source breakdown table */
+  table.src { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 6px; }
+  table.src th { background: #e0e0e0; border: 1px solid #999; padding: 2px 4px; text-align: left; }
+  table.src td { border: 1px solid #ccc; padding: 2px 4px; }
+  table.src .val { text-align: right; font-weight: bold; }
+  table.src .src { color: #555; font-size: 7.5pt; }
+  /* Summary side table */
+  table.sum { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9pt; }
+  table.sum td { border: 1px solid #aaa; padding: 3px 5px; vertical-align: top; }
+  table.sum td.sl { background: #f0f0f0; font-weight: bold; font-size: 8.5pt; width: 58%; }
+  table.sum td.sv { text-align: right; font-size: 9pt; }
+  table.sum td.unit { font-size: 7.5pt; font-weight: normal; color: #555; }
+  table.sum tr.sec td { background: #e0e0e0; font-weight: bold; font-size: 8.5pt; padding: 2px 5px; }
+  /* Advisory */
+  .adv { border: 1.5px solid #555; padding: 6px 8px; margin-bottom: 6px; font-size: 8.5pt; }
+  .adv .adv-title { font-weight: bold; font-size: 9pt; margin-bottom: 3px; }
+  .adv .adv-sub { font-size: 7.5pt; color: #555; margin-bottom: 4px; }
+  .adv-line { margin-bottom: 3px; padding-left: 10px; position: relative; }
+  .adv-line::before { content: "→"; position: absolute; left: 0; font-weight: bold; }
+  /* Legend */
+  .legend { font-size: 7.5pt; color: #555; margin-bottom: 6px; }
+  @media print { body { padding: 6mm 8mm; } @page { size: A4; margin: 6mm; } }
+</style>
+</head>
+<body>
+<h1>${hospitalName}</h1>
+<h2>Neonatal Intensive Care Unit — Nutrition Audit Report</h2>
+
+<div class="hdr">
+  <div class="hdr-cell"><b>Baby of:</b> ${ip.babyOf || blank(16)}</div>
+  <div class="hdr-cell"><b>Patient ID:</b> ${ip.patientId || blank(10)}</div>
+  <div class="hdr-cell"><b>Date:</b> ${formatDate(ip.date)}</div>
+  <div class="hdr-cell"><b>Weight:</b> ${ip.wtNow} g &nbsp;<span style="font-size:8pt;color:#555;">(prev: ${ip.wtLast} g)</span></div>
+</div>
+
+<!-- Key metrics strip -->
+<div class="metrics">
+  <div class="metric"><div class="mv">${Math.round(res.rows.find(r=>r.k==="energy").perKg)}</div><div class="ml">Calories</div><div class="mu">kcal/kg</div></div>
+  <div class="metric"><div class="mv">${fv(res.rows.find(r=>r.k==="protein").perKg)}</div><div class="ml">Protein</div><div class="mu">g/kg</div></div>
+  <div class="metric"><div class="mv">${res.pe.toFixed(1)}</div><div class="ml">P:E Ratio</div><div class="mu">${res.pe < 2.8 || res.pe > 3.6 ? "⚠ target 2.8–3.6" : "✓ target 2.8–3.6"}</div></div>
+  <div class="metric"><div class="mv">${Math.round(res.feedMlKg)}</div><div class="ml">Feed Vol</div><div class="mu">mL/kg</div></div>
+  <div class="metric"><div class="mv">${fv(res.hmfG)}</div><div class="ml">${fortLabel}</div><div class="mu">g/d</div></div>
+  <div class="metric"><div class="mv">${res.wtGain.toFixed(1)}</div><div class="ml">Wt Gain</div><div class="mu">g/kg/d ${res.wtGain >= 15 ? "✓" : "⚠"}</div></div>
+</div>
+
+<div class="body-wrap">
+
+  <!-- LEFT: nutrient table + advisory + breakdown -->
+  <div class="col-left">
+
+    <div class="sec">Nutrient Audit &nbsp;·&nbsp; <span style="font-weight:normal;">▼ below RDA &nbsp; ▲ above RDA &nbsp; ● adequate</span></div>
+    <table class="nut">
+      <tr><th>Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th style="text-align:right;">ESPGHAN</th></tr>
+      ${nutrientRows}
+    </table>
+
+    ${grosslyLow.length > 0 ? `
+    <div class="adv">
+      <div class="adv-title">⚠ Deficiency Advisory</div>
+      <div class="adv-sub">${grosslyLow.length} nutrient${grosslyLow.length > 1 ? "s" : ""} below ESPGHAN RDA (&lt;80%): ${names}</div>
+      ${advLines.map(l => `<div class="adv-line">${l}</div>`).join("")}
+    </div>` : `<div style="font-size:8.5pt;padding:5px 6px;border:1px solid #ccc;margin-bottom:6px;">✓ All audited nutrients within ESPGHAN RDA</div>`}
+
+    <div class="sec" style="margin-bottom:2px;">Source Breakdown (key nutrients)</div>
+    <table class="src">
+      <tr><th>Nutrient</th><th>Unit</th><th style="text-align:right;">Intake</th><th>Sources (% contribution)</th></tr>
+      ${breakdownRows}
+    </table>
+
+  </div>
+
+  <!-- RIGHT: summary inputs -->
+  <div class="col-right">
+    <table class="sum">
+      <tr class="sec"><td colspan="2">Feed Details</td></tr>
+      <tr><td class="sl">Source</td><td class="sv">${ip.feedSrc}</td></tr>
+      <tr><td class="sl">Volume <span class="unit">mL/kg/d</span></td><td class="sv"><b>${Math.round(res.feedMlKg)}</b></td></tr>
+      <tr><td class="sl">${fortLabel} <span class="unit">g/d</span></td><td class="sv"><b>${fv(res.hmfG)}</b></td></tr>
+
+      <tr class="sec"><td colspan="2">Weight</td></tr>
+      <tr><td class="sl">Current <span class="unit">g</span></td><td class="sv"><b>${ip.wtNow}</b></td></tr>
+      <tr><td class="sl">Previous <span class="unit">g</span></td><td class="sv"><b>${ip.wtLast}</b></td></tr>
+      <tr><td class="sl">Gain <span class="unit">g/kg/d</span></td><td class="sv"><b>${res.wtGain.toFixed(1)}</b></td></tr>
+
+      <tr class="sec"><td colspan="2">Supplements</td></tr>
+      ${r1(ip.caMl) > 0 ? `<tr><td class="sl">Ca/P syrup <span class="unit">mL/d</span></td><td class="sv"><b>${fv(ip.caMl)}</b></td></tr>` : ""}
+      ${r1(ip.feMl) > 0 ? `<tr><td class="sl">Iron <span class="unit">mL/d</span></td><td class="sv"><b>${fv(ip.feMl)}</b></td></tr>` : ""}
+      ${r1(ip.vitdIU) > 0 ? `<tr><td class="sl">Vit D <span class="unit">IU/d</span></td><td class="sv"><b>${Math.round(ip.vitdIU)}</b></td></tr>` : ""}
+      ${r1(ip.mviMl) > 0 ? `<tr><td class="sl">MVI <span class="unit">mL/d</span></td><td class="sv"><b>${fv(ip.mviMl)}</b></td></tr>` : ""}
+
+      <tr class="sec"><td colspan="2">Summary</td></tr>
+      <tr><td class="sl">Calories <span class="unit">kcal/kg</span></td><td class="sv"><b>${Math.round(res.rows.find(r=>r.k==="energy").perKg)}</b></td></tr>
+      <tr><td class="sl">Protein <span class="unit">g/kg</span></td><td class="sv"><b>${fv(res.rows.find(r=>r.k==="protein").perKg)}</b></td></tr>
+      <tr><td class="sl">P:E Ratio</td><td class="sv"><b>${res.pe.toFixed(1)}</b></td></tr>
+      <tr><td class="sl">Deficiencies</td><td class="sv"><b>${grosslyLow.length}</b></td></tr>
+    </table>
+
+    <div style="margin-top:8px;font-size:7.5pt;color:#555;line-height:1.5;">
+      <b>RDA source:</b> ESPGHAN 2022<br>
+      ▼ Below RDA (&lt;80%) &nbsp; ▲ Above RDA<br>
+      ● Within range
+    </div>
+  </div>
+
+</div>
+
+<script>window.onload = function() { window.print(); };</script>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank", "width=860,height=1100");
+  if (!w) { alert("Pop-up blocked. Please allow pop-ups for this site."); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
   const [ip, setIp] = useState({
     babyOf: "", patientId: "", date: todayStr(), wtNow: 1500, wtLast: 1400, mode: "day", perFeed: 15, feedsPerDay: 12, totalMlKg: 150,
@@ -1455,7 +1684,7 @@ function NutritionPage({ T, defaults, nutOv, saveNutOv }) {
 
       <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 16 }}>
         <button onClick={saveNutAudit} style={{ flex: 1, padding: 12, fontSize: 13, fontWeight: 700, background: T.card, color: T.accentText, border: "1.5px solid " + T.accent + "33", borderRadius: 10, cursor: "pointer" }}>💾 Save</button>
-        <button onClick={() => window.print()} style={{ flex: 1, padding: 12, fontSize: 13, fontWeight: 700, background: T.card, color: T.t2, border: "1.5px solid " + T.border, borderRadius: 10, cursor: "pointer" }}>🖨️ Print</button>
+        <button onClick={() => printNutritionAudit(ip, res, fortLabel)} style={{ flex: 1, padding: 12, fontSize: 13, fontWeight: 700, background: T.card, color: T.t2, border: "1.5px solid " + T.border, borderRadius: 10, cursor: "pointer" }}>🖨️ Print</button>
       </div>
     </div>}
   </div>;
