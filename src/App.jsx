@@ -123,7 +123,29 @@ function calculateTPN(inputs) {
   const dexHighName = F15 === 1 ? "25% Dextrose" : "50% Dextrose";
 
   if (dexLowVol < -0.05) errors.push(dexLowName + " volume is negative (" + r1(dexLowVol) + " mL). Try switching dextrose concentrations or adjust GIR.");
-  if (dexHighVol < -0.05) errors.push(dexHighName + " volume is negative (" + r1(dexHighVol) + " mL). Try different dextrose concentrations or reduce GIR.");
+  if (dexHighVol < -0.05) errors.push(dexHighName + " volume is negative (" + r1(dexHighVol) + " mL). Glucose ordered is too low for this fluid volume \u2014 increase GIR, reduce TFR, or use a weaker low dextrose.");
+
+  // Fluid-balance guard. dexLowVol + dexHighVol must fill fluidForGlc exactly.
+  // When the glucose load is too small to be carried even at the lowest available
+  // dextrose strength, the solver zeroes the high dextrose and the leftover volume
+  // would otherwise vanish silently, under-fluiding the baby. Fail loudly instead.
+  const dexTotal = dexLowVol + dexHighVol;
+  const fluidGap = fluidForGlc - dexTotal;
+  if (fluidForGlc > 0 && fluidGap > 0.05) {
+    const reqPct = tpnGlucose * 100 / fluidForGlc;
+    const lowPct = F13 === 1 ? "5%" : "10%";
+    const deliveredTFR = tfr - (fluidGap / wt);
+    errors.push(
+      "Dextrose cannot fill the prescribed volume. Fluid for glucose is " + r1(fluidForGlc) +
+      " mL but only " + r1(tpnGlucose) + " g dextrose is needed, i.e. " + reqPct.toFixed(1) +
+      "% \u2014 weaker than the lowest strength selected (" + lowPct + "). " + r1(fluidGap) +
+      " mL/d would be unaccounted for: baby would receive " + r1(deliveredTFR) + " mL/kg/d instead of " +
+      tfr + " mL/kg/d. " +
+      (F13 === 1
+        ? "Reduce TFR, increase GIR, or give the deficit as sterile water and document it."
+        : "Set Low dextrose to 5%, or reduce TFR / increase GIR.")
+    );
+  }
 
   if (errors.length > 0) return { errors };
 
@@ -283,8 +305,23 @@ function InfoBtn({ id, T, oi, soi }) {
 
 // ━━━ Input Components ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function NI({ label, unit, value, onChange, step = .1, min = 0, max, T, info, oi, soi }) {
-  const inc = () => { const n = +(value + step).toFixed(4); onChange(max != null ? Math.min(n, max) : n) };
-  const dec = () => onChange(Math.max(+(value - step).toFixed(4), min));
+  // draft holds the raw text while the field is focused, so partial entries
+  // ("", "-", "1.") stay typeable. null means "show the canonical value".
+  const [draft, setDraft] = useState(null);
+  const selRef = useRef(false);
+  const clamp = n => { let v = n; if (min != null) v = Math.max(v, min); if (max != null) v = Math.min(v, max); return v };
+  const inc = () => onChange(clamp(+(value + step).toFixed(4)));
+  const dec = () => onChange(clamp(+(value - step).toFixed(4)));
+  const edit = raw => {
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) { setDraft(raw); onChange(clamp(0)); return }
+    const c = clamp(n);
+    onChange(c);
+    // Rewrite the visible text whenever it disagrees with the accepted value,
+    // e.g. "0780" -> "780", "99999" -> max, "-5" -> min. Keeps the display
+    // honest; React alone will not do this for type="number".
+    setDraft(raw.endsWith(".") || String(c) === raw ? raw : String(c));
+  };
   return <div style={{ flex: "1 1 0", minWidth: 0 }}>
     <div style={{ display: "flex", alignItems: "baseline", marginBottom: 3, minHeight: 15, gap: 3 }}>
       <label style={{ fontSize: 10, color: T.t3, fontWeight: 600, letterSpacing: ".03em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 1, minWidth: 0 }}>{label}</label>
@@ -292,9 +329,11 @@ function NI({ label, unit, value, onChange, step = .1, min = 0, max, T, info, oi
       {info && <InfoBtn id={info} T={T} oi={oi} soi={soi} />}
     </div>
     <div style={{ display: "flex", alignItems: "center", background: T.inp, borderRadius: 8, border: "1.5px solid " + T.inpBorder, height: 38, overflow: "hidden" }}>
-      <input type="number" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} step={step} min={min} max={max}
+      <input type="number" value={draft !== null ? draft : String(value)} onChange={e => edit(e.target.value)} step={step} min={min} max={max}
         style={{ width: 0, flex: "1 1 auto", padding: "0 4px 0 6px", fontSize: 15, fontWeight: 700, background: "transparent", border: "none", color: T.t1, outline: "none", fontFamily: "'JetBrains Mono',monospace", minWidth: 0 }}
-        onFocus={e => { e.currentTarget.parentElement.style.borderColor = T.inpFocus; e.currentTarget.select(); }} onBlur={e => e.currentTarget.parentElement.style.borderColor = T.inpBorder} />
+        onFocus={e => { selRef.current = true; setDraft(String(value)); e.currentTarget.parentElement.style.borderColor = T.inpFocus; e.currentTarget.select(); }}
+        onMouseUp={e => { if (selRef.current) { selRef.current = false; e.preventDefault() } }}
+        onBlur={e => { selRef.current = false; setDraft(null); e.currentTarget.parentElement.style.borderColor = T.inpBorder }} />
       <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid " + T.inpBorder, height: "100%", flexShrink: 0, width: 24 }}>
         <button onClick={inc} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, borderBottom: ".5px solid " + T.inpBorder, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
         <button onClick={dec} style={{ flex: 1, background: T.stepBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: T.t2, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = T.stepHover} onMouseLeave={e => e.currentTarget.style.background = T.stepBg}><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg></button>
