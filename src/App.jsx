@@ -500,7 +500,7 @@ function HMenu({ open, onClose, onNav, T }) {
         ))}
       </div>
       <div style={{ padding: "12px 20px", borderTop: "1px solid " + T.border, fontSize: 10, color: T.t3, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <span>{APP_NAME_VERSION} · {APP_UPDATED}</span>
+        <span>{APP_NAME_VERSION} ({APP_UPDATED})</span>
         <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.t3, textDecoration: "none", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.color = T.accent} onMouseLeave={e => e.currentTarget.style.color = T.t3}>{SITE_LABEL}</a>
       </div>
@@ -1822,8 +1822,7 @@ function AboutPage({ T }) {
   return <div>
     <div style={{ ...card, display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 18px 18px" }}>
       <Logo T={T} width={240} />
-      <div style={{ fontSize: 13, color: T.t3, marginTop: 8 }}>v{APP_VERSION}</div>
-      <div style={{ fontSize: 11, color: T.t3, marginTop: 2 }}>Last updated {APP_UPDATED}</div>
+      <div style={{ fontSize: 13, color: T.t3, marginTop: 8 }}>v{APP_VERSION} ({APP_UPDATED})</div>
     </div>
 
     <div style={card}>
@@ -1982,7 +1981,7 @@ function ContactPage({ T }) {
         <div style={{ width: 40, height: 40, borderRadius: 10, background: T.btnGrad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{"\ud83d\udce7"}</div>
         <div><div style={{ fontSize: 16, fontWeight: 700, color: T.t1 }}>Contact & Feedback</div><div style={{ fontSize: 11, color: T.t3 }}>Help us improve NeoFORT</div></div>
       </div>
-      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginBottom: 12, fontSize: 12.5, color: T.t2, textDecoration: "none", lineHeight: 1.6 }}>
+      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginBottom: 12, fontSize: 12.5, color: T.t2, textDecoration: "none", lineHeight: 1.6, textAlign: "center" }}>
         Visit at <span style={{ color: T.accentText, fontWeight: 700 }}>{SITE_LABEL}</span> to explore more
       </a>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
