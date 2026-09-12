@@ -1,7 +1,7 @@
 {
-  "name": "neonest-nicu-suite",
-  "version": "1.0.0",
-  "description": "NeoNEST - Neonatal Essential Support Tools. NICU digitalization suite.",
+  "name": "neofort",
+  "version": "1.1.0",
+  "description": "NeoFORT - Neonatal Fluid Optimisation & Review Tool.",
   "type": "module",
   "scripts": {
     "dev": "vite",

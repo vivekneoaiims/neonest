@@ -3,3 +3,4 @@ dist
 .vercel
 .netlify
 *.local
+.DS_Store
