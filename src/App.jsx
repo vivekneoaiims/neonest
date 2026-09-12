@@ -48,6 +48,7 @@ async function supabaseLoginByEmail(email) {
 
 // ━━━ App Version ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const APP_VERSION = "1.1";
+const APP_UPDATED = "12 Sep 2026";   // bump alongside APP_VERSION on each release
 const APP_NAME_VERSION = "NeoFORT v" + APP_VERSION;
 const SITE_URL = "https://vivekneoaiims.com";
 const SITE_LABEL = "vivekneoaiims.com";
@@ -499,7 +500,7 @@ function HMenu({ open, onClose, onNav, T }) {
         ))}
       </div>
       <div style={{ padding: "12px 20px", borderTop: "1px solid " + T.border, fontSize: 10, color: T.t3, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <span>{APP_NAME_VERSION}</span>
+        <span>{APP_NAME_VERSION} · {APP_UPDATED}</span>
         <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.t3, textDecoration: "none", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.color = T.accent} onMouseLeave={e => e.currentTarget.style.color = T.t3}>{SITE_LABEL}</a>
       </div>
@@ -1822,6 +1823,7 @@ function AboutPage({ T }) {
     <div style={{ ...card, display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 18px 18px" }}>
       <Logo T={T} width={240} />
       <div style={{ fontSize: 13, color: T.t3, marginTop: 8 }}>v{APP_VERSION}</div>
+      <div style={{ fontSize: 11, color: T.t3, marginTop: 2 }}>Last updated {APP_UPDATED}</div>
     </div>
 
     <div style={card}>
@@ -1841,10 +1843,12 @@ function AboutPage({ T }) {
       </div>
       <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: "0 0 10px" }}>Dr. Vivek Kumar is a neonatologist and currently an Assistant Professor at Lady Hardinge Medical College (LHMC), New Delhi. He completed his medical training (MBBS, MD, and DM) at AIIMS, New Delhi.</p>
       <p style={{ fontSize: 14, color: T.t2, lineHeight: 1.8, margin: 0 }}>NeoFORT is a personal, independent project born from his interest in the application of digital technology and Artificial Intelligence to enhance neonatal care.</p>
-      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 13, fontWeight: 600, color: T.accentText, textDecoration: "none", padding: "8px 12px", borderRadius: 8, border: "1px solid " + T.accent + "33", background: T.accentDim }}>
-        {SITE_LABEL}
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ opacity: .75 }}><path d="M4 2h6v6M10 2L3 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </a>
+      <div style={{ textAlign: "center", marginTop: 16 }}>
+        <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, color: T.t2, textDecoration: "none", padding: "9px 14px", borderRadius: 8, border: "1px solid " + T.accent + "33", background: T.accentDim }}>
+          Explore more at <span style={{ color: T.accentText, fontWeight: 700 }}>{SITE_LABEL}</span>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ opacity: .7 }}><path d="M4 2h6v6M10 2L3 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </a>
+      </div>
     </div>
 
     <div style={{ ...card, background: T.accentDim, border: "1px solid " + T.accent + "25", padding: "18px 20px" }}>
@@ -1978,6 +1982,9 @@ function ContactPage({ T }) {
         <div style={{ width: 40, height: 40, borderRadius: 10, background: T.btnGrad, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{"\ud83d\udce7"}</div>
         <div><div style={{ fontSize: 16, fontWeight: 700, color: T.t1 }}>Contact & Feedback</div><div style={{ fontSize: 11, color: T.t3 }}>Help us improve NeoFORT</div></div>
       </div>
+      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginBottom: 12, fontSize: 12.5, color: T.t2, textDecoration: "none", lineHeight: 1.6 }}>
+        Visit at <span style={{ color: T.accentText, fontWeight: 700 }}>{SITE_LABEL}</span> to explore more
+      </a>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         <div style={{ padding: "10px 12px", background: T.accentDim, borderRadius: 8, border: "1px solid " + T.accent + "20" }}>
           <div style={{ fontSize: 9, color: T.t3, fontWeight: 600, textTransform: "uppercase", marginBottom: 2 }}>Email</div>
